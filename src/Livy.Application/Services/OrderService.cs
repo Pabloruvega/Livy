@@ -1,6 +1,6 @@
 // Application/Services/OrderService.cs
 using Livy.Application.DTOs.Order;
-using Livy.Application.Interfaces;
+using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
 using Microsoft.Extensions.Logging;

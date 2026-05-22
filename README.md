@@ -1,6 +1,9 @@
 # 🛒 Livy — E-Commerce API
 
-API REST desarrollada con **ASP.NET Core 8** y **Clean Architecture** para la materia Backend (Optativa II) — Tecnicatura Universitaria en Desarrollo de Software · UCCuyo 2026.
+API REST desarrollada con **ASP.NET Core 8** aplicando **Clean Architecture**, **CQRS con MediatR** y **autenticación JWT**.
+
+Proyecto integrador de la materia **Backend (Optativa II)** — Tecnicatura Universitaria en Desarrollo de Software · UCCuyo · 2026.  
+**Profesor:** Tec. Nicolás Ortiz
 
 ---
 
@@ -8,10 +11,43 @@ API REST desarrollada con **ASP.NET Core 8** y **Clean Architecture** para la ma
 
 ```
 Livy/
-├── Livy.Domain/          # Entidades, Value Objects, Excepciones, Interfaces
-├── Livy.Application/     # DTOs, Services, Interfaces de repositorios
-├── Livy.Infrastructure/  # EF Core, Repositorios, Migraciones, DbContext
+├── Livy.Domain/          # Entidades, Value Objects, Excepciones, Interfaces (núcleo)
+├── Livy.Application/     # Casos de uso (Features), DTOs, Contratos, Services
+├── Livy.Infrastructure/  # EF Core, Repositorios, Migraciones, JWT
 └── Livy.WebApi/          # Controllers, Middleware, Program.cs
+```
+
+### Flujo de una request HTTP
+
+```
+HTTP Request
+    ↓
+Controller
+    ↓  _mediator.Send(command/query)
+MediatR
+    ↓  enruta automáticamente
+Handler (UseCase)
+    ↓  IRepository + IUnitOfWork
+Base de Datos (SQLite)
+    ↓
+Response DTO → Controller → HTTP Response
+```
+
+### Estructura de la capa Application (CQRS)
+
+```
+Livy.Application/
+├── Contracts/
+│   └── Persistence/          # Interfaces de repositorios (contratos)
+├── Features/
+│   ├── Products/
+│   │   ├── Commands/          # CreateProduct, UpdateProduct, DeleteProduct
+│   │   └── Queries/           # GetAllProducts, GetProductById
+│   └── Orders/
+│       ├── Commands/          # CreateOrder
+│       └── Queries/           # GetOrderById
+├── Services/                  # UserService (login/register), CategoryService
+└── DTOs/                      # Objetos de transferencia de datos
 ```
 
 ---
@@ -19,8 +55,8 @@ Livy/
 ## ✅ Requisitos previos
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [DB Browser for SQLite](https://sqlitebrowser.org/) *(opcional, para inspeccionar la BD)*
 - [Git](https://git-scm.com/)
+- [DB Browser for SQLite](https://sqlitebrowser.org/) *(opcional, para inspeccionar la BD)*
 
 ---
 
@@ -29,7 +65,7 @@ Livy/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/Pabloruvega/livy.git
+git clone https://github.com/Pabloruvega/Livy.git
 cd livy
 ```
 
@@ -69,7 +105,9 @@ http://localhost:5204/swagger
 
 ---
 
-## 🔐 Cómo probar el Login
+## 🔐 Autenticación JWT
+
+Todos los endpoints (excepto `/register` y `/login`) requieren un token JWT.
 
 ### Paso 1 — Registrar un usuario
 
@@ -83,21 +121,18 @@ http://localhost:5204/swagger
 }
 ```
 
-Respuesta esperada `201 Created`:
-
+Respuesta `201 Created`:
 ```json
 {
   "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "email": "pablo@gmail.com",
   "name": "Pablo",
   "role": "User",
-  "createdAt": "2026-05-21T..."
+  "createdAt": "2026-05-22T..."
 }
 ```
 
----
-
-### Paso 2 — Hacer login
+### Paso 2 — Hacer login y obtener el token
 
 **`POST /api/users/login`**
 
@@ -108,19 +143,23 @@ Respuesta esperada `201 Created`:
 }
 ```
 
-Respuesta esperada `200 OK`:
-
+Respuesta `200 OK`:
 ```json
 {
-  "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "email": "pablo@gmail.com",
   "name": "Pablo",
   "role": "User",
-  "createdAt": "2026-05-21T..."
+  "expires": "2026-05-22T..."
 }
 ```
 
----
+### Paso 3 — Usar el token en Swagger
+
+1. Copiá el valor del campo `token`
+2. Hacé clic en el botón **Authorize 🔒** (arriba a la derecha en Swagger)
+3. Pegá el token y hacé clic en **Authorize**
+4. Todos los endpoints quedan habilitados
 
 ### Casos de error
 
@@ -128,38 +167,51 @@ Respuesta esperada `200 OK`:
 |---|---|---|
 | Contraseña incorrecta | `401 Unauthorized` | `"Credenciales inválidas."` |
 | Email ya registrado | `400 Bad Request` | `"El email '...' ya está registrado."` |
-| Campos vacíos | `400 Bad Request` | Mensajes de validación por campo |
+| Sin token en el header | `401 Unauthorized` | — |
 
 ---
 
 ## 📦 Endpoints disponibles
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| `POST` | `/api/users/register` | Registrar nuevo usuario |
-| `POST` | `/api/users/login` | Autenticarse |
-| `GET` | `/api/users` | Listar usuarios |
-| `GET` | `/api/users/{id}` | Obtener usuario por Id |
-| `GET` | `/api/products` | Listar productos |
-| `GET` | `/api/products/{id}` | Obtener producto por Id |
-| `GET` | `/api/products/search?term=...` | Buscar productos por nombre |
-| `POST` | `/api/products` | Crear producto |
-| `PUT` | `/api/products/{id}` | Actualizar producto |
-| `DELETE` | `/api/products/{id}` | Eliminar producto |
-| `GET` | `/api/categories` | Listar categorías |
-| `GET` | `/api/categories/{id}` | Obtener categoría por Id |
-| `POST` | `/api/categories` | Crear categoría |
-| `DELETE` | `/api/categories/{id}` | Eliminar categoría |
-| `GET` | `/api/orders/{id}` | Obtener orden por Id |
-| `GET` | `/api/orders/user/{userId}` | Órdenes de un usuario |
-| `POST` | `/api/orders` | Crear orden |
+### Usuarios
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `POST` | `/api/users/register` | ❌ | Registrar nuevo usuario |
+| `POST` | `/api/users/login` | ❌ | Login — devuelve token JWT |
+| `GET` | `/api/users` | ✅ | Listar todos los usuarios |
+| `GET` | `/api/users/{id}` | ✅ | Obtener usuario por Id |
+
+### Productos
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/api/products` | ✅ | Listar todos los productos |
+| `GET` | `/api/products/{id}` | ✅ | Obtener producto por Id |
+| `GET` | `/api/products/search?term=...` | ✅ | Buscar por nombre |
+| `POST` | `/api/products` | ✅ | Crear producto |
+| `PUT` | `/api/products/{id}` | ✅ | Actualizar producto |
+| `DELETE` | `/api/products/{id}` | ✅ | Eliminar producto |
+
+### Categorías
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/api/categories` | ✅ | Listar categorías |
+| `GET` | `/api/categories/{id}` | ✅ | Obtener categoría por Id |
+| `POST` | `/api/categories` | ✅ | Crear categoría |
+| `DELETE` | `/api/categories/{id}` | ✅ | Eliminar categoría |
+
+### Órdenes
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/api/orders/{id}` | ✅ | Obtener orden por Id (con ítems) |
+| `POST` | `/api/orders` | ✅ | Crear orden (descuenta stock automáticamente) |
 
 ---
 
 ## 🗄️ Base de datos
 
-El proyecto usa **SQLite** con Entity Framework Core. La connection string está en `src/Livy.WebApi/appsettings.json`:
+El proyecto usa **SQLite** — no requiere instalar nada adicional.
 
+**Connection string** en `src/Livy.WebApi/appsettings.json`:
 ```json
 {
   "ConnectionStrings": {
@@ -167,8 +219,6 @@ El proyecto usa **SQLite** con Entity Framework Core. La connection string está
   }
 }
 ```
-
-Para inspeccionar la BD visualmente, abrí el archivo `ecommerce.db` con [DB Browser for SQLite](https://sqlitebrowser.org/).
 
 ### Comandos útiles de migraciones
 
@@ -193,15 +243,13 @@ dotnet ef database update 0 \
 
 ## 🛠️ Tecnologías utilizadas
 
-- **ASP.NET Core 8** — Framework web
-- **Entity Framework Core 8** — ORM
-- **SQLite** — Base de datos de desarrollo
-- **Swashbuckle / Swagger** — Documentación de la API
-- **Clean Architecture** — Separación en capas Domain / Application / Infrastructure / WebApi
+| Tecnología | Versión | Uso |
+|---|---|---|
+| ASP.NET Core | 8.0 | Framework web |
+| Entity Framework Core | 8.0 | ORM |
+| SQLite | — | Base de datos de desarrollo |
+| MediatR | 12.x | Patrón CQRS / Mediator |
+| JWT Bearer | 8.0 | Autenticación |
+| Swashbuckle (Swagger) | 6.6 | Documentación de la API |
 
 ---
-
-## 👨‍💻 Autor
-
-Pablo · Tecnicatura Universitaria en Desarrollo de Software · UCCuyo · 2026  
-Profesor: Tec. Nicolás Ortiz

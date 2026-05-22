@@ -2,6 +2,10 @@
 using Livy.Application;
 using Livy.Infrastructure;
 using Livy.WebApi.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,26 +13,70 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-// Swagger / OpenAPI
+// Swagger con soporte para Bearer Token
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new()
+    c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title       = "Livy E-Commerce API",
         Version     = "v1",
         Description = "API REST para el sistema de e-commerce Livy. Tecnicatura UCCuyo 2026."
     });
-    // Incluir comentarios XML de los controllers si existieran
-    // var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    // c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
+
+    // Configurar el botón "Authorize" en Swagger para mandar el JWT
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = SecuritySchemeType.Http,
+        Scheme       = "Bearer",
+        BearerFormat = "JWT",
+        In           = ParameterLocation.Header,
+        Description  = "Ingresá el token JWT. Ejemplo: eyJhbGci..."
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 // Capas de la arquitectura
-builder.Services.AddInfrastructure(builder.Configuration); // DbContext + repositorios
-builder.Services.AddApplicationServices();                 // Services de Application
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplicationServices();
 
-// Logging estructurado — usa el de ASP.NET Core por defecto (console + debug)
+// ─── Autenticación JWT ────────────────────────────────────────────────────────
+var jwtKey = builder.Configuration["Jwt:Key"]!;
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
+            ValidAudience            = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey         = new SymmetricSecurityKey(
+                                           Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
@@ -37,10 +85,7 @@ builder.Logging.AddDebug();
 
 var app = builder.Build();
 
-// Middleware de logging de requests (va primero para loguear todo)
 app.UseMiddleware<RequestLoggingMiddleware>();
-
-// Middleware global de manejo de errores (va segundo para capturar todo)
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -49,12 +94,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Livy API v1");
-        c.RoutePrefix = "swagger"; // acceso en /swagger
+        c.RoutePrefix = "swagger";
     });
 }
 
 app.UseHttpsRedirection();
-app.UseAuthorization();
+
+app.UseAuthentication(); // ← primero Authentication
+app.UseAuthorization();  // ← después Authorization (orden obligatorio)
+
 app.MapControllers();
 
 app.Run();

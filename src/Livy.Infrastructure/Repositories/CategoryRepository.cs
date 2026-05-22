@@ -1,5 +1,5 @@
 // Infrastructure/Repositories/CategoryRepository.cs
-using Livy.Application.Interfaces;
+using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
 using Livy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

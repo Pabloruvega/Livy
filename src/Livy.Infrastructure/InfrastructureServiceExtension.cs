@@ -1,8 +1,10 @@
 // Infrastructure/InfrastructureServiceExtension.cs
-using Livy.Application.Interfaces;
+using Livy.Application.Contracts.Persistence;
+using Livy.Application.Services;
 using Livy.Domain.Interfaces;
 using Livy.Infrastructure.Persistence;
 using Livy.Infrastructure.Repositories;
+using Livy.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,20 +17,22 @@ public static class InfrastructureServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // DbContext — Scoped: una instancia por request HTTP
+        // DbContext — Scoped
         services.AddDbContext<LivyDbContext>(options =>
-            options.UseSqlite(
-                configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
 
-        // IUnitOfWork — Scoped: misma instancia que el DbContext
-        // Permite que los Handlers persistan todos los cambios de una sola vez
+        // IUnitOfWork — Scoped
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // Repositorios — Scoped: misma lifetime que el DbContext
+        // Repositorios — Scoped
+        // Las interfaces ahora están en Application/Contracts/Persistence/
         services.AddScoped<IProductRepository,  ProductRepository>();
         services.AddScoped<IOrderRepository,    OrderRepository>();
         services.AddScoped<IUserRepository,     UserRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+
+        // JWT Token Service
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         return services;
     }

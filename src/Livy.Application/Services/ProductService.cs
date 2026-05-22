@@ -1,6 +1,6 @@
 // Application/Services/ProductService.cs
 using Livy.Application.DTOs.Product;
-using Livy.Application.Interfaces;
+using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
 using Microsoft.Extensions.Logging;

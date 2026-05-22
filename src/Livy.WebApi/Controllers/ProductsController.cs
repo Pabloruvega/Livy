@@ -1,57 +1,43 @@
 // WebApi/Controllers/ProductsController.cs
-using Livy.Application.Common;
 using Livy.Application.DTOs.Product;
-using Livy.Application.UseCases.Products.Commands.CreateProduct;
-using Livy.Application.UseCases.Products.Commands.DeleteProduct;
-using Livy.Application.UseCases.Products.Commands.UpdateProduct;
-using Livy.Application.UseCases.Products.Queries.GetAllProducts;
-using Livy.Application.UseCases.Products.Queries.GetProductById;
+using Livy.Application.Features.Products.Commands.CreateProduct;
+using Livy.Application.Features.Products.Commands.DeleteProduct;
+using Livy.Application.Features.Products.Commands.UpdateProduct;
+using Livy.Application.Features.Products.Queries.GetAllProducts;
+using Livy.Application.Features.Products.Queries.GetProductById;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Livy.WebApi.Controllers;
 
 /// <summary>
-/// Flujo correcto Clean Architecture:
-/// HTTP Request → Controller → Handler (UseCase) → Repository → BD
-///                           ↑ IUnitOfWork persiste al final
+/// Flujo Clean Architecture con MediatR:
+/// HTTP Request → Controller → _mediator.Send(command/query) → Handler → Repository → BD
+/// El Controller NO sabe qué Handler existe — solo envía mensajes.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize]
 public class ProductsController : ControllerBase
 {
-    private readonly IQueryHandler<GetAllProductsQuery, IEnumerable<ProductDto>>  _getAllHandler;
-    private readonly IQueryHandler<GetProductByIdQuery, ProductDto>               _getByIdHandler;
-    private readonly ICommandHandler<CreateProductCommand, ProductDto>            _createHandler;
-    private readonly ICommandHandler<UpdateProductCommand, ProductDto>            _updateHandler;
-    private readonly ICommandHandler<DeleteProductCommand, bool>                  _deleteHandler;
+    private readonly IMediator _mediator;
 
-    public ProductsController(
-        IQueryHandler<GetAllProductsQuery, IEnumerable<ProductDto>>  getAllHandler,
-        IQueryHandler<GetProductByIdQuery, ProductDto>               getByIdHandler,
-        ICommandHandler<CreateProductCommand, ProductDto>            createHandler,
-        ICommandHandler<UpdateProductCommand, ProductDto>            updateHandler,
-        ICommandHandler<DeleteProductCommand, bool>                  deleteHandler)
-    {
-        _getAllHandler   = getAllHandler;
-        _getByIdHandler = getByIdHandler;
-        _createHandler  = createHandler;
-        _updateHandler  = updateHandler;
-        _deleteHandler  = deleteHandler;
-    }
+    public ProductsController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>Obtiene todos los productos.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
-        => Ok(await _getAllHandler.HandleAsync(new GetAllProductsQuery(), ct));
+        => Ok(await _mediator.Send(new GetAllProductsQuery(), ct));
 
     /// <summary>Obtiene un producto por Id.</summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
-        => Ok(await _getByIdHandler.HandleAsync(new GetProductByIdQuery(id), ct));
+        => Ok(await _mediator.Send(new GetProductByIdQuery(id), ct));
 
     /// <summary>Crea un nuevo producto.</summary>
     [HttpPost]
@@ -61,7 +47,7 @@ public class ProductsController : ControllerBase
     {
         var command = new CreateProductCommand(
             dto.Name, dto.Description, dto.Price, dto.Stock, dto.CategoryId);
-        var created = await _createHandler.HandleAsync(command, ct);
+        var created = await _mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
@@ -73,8 +59,7 @@ public class ProductsController : ControllerBase
     {
         var command = new UpdateProductCommand(
             id, dto.Name, dto.Description, dto.Price, dto.Stock, dto.CategoryId);
-        var updated = await _updateHandler.HandleAsync(command, ct);
-        return Ok(updated);
+        return Ok(await _mediator.Send(command, ct));
     }
 
     /// <summary>Elimina un producto.</summary>
@@ -83,7 +68,7 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        await _deleteHandler.HandleAsync(new DeleteProductCommand(id), ct);
+        await _mediator.Send(new DeleteProductCommand(id), ct);
         return NoContent();
     }
 }

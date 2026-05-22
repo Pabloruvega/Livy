@@ -1,6 +1,6 @@
 // Application/Services/UserService.cs
 using Livy.Application.DTOs.User;
-using Livy.Application.Interfaces;
+using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
 using Livy.Domain.Interfaces;

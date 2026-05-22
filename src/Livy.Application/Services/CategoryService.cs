@@ -1,6 +1,6 @@
 // Application/Services/CategoryService.cs
 using Livy.Application.DTOs.Category;
-using Livy.Application.Interfaces;
+using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
 using Microsoft.Extensions.Logging;
