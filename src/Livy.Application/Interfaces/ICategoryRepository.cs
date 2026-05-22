@@ -1,13 +1,13 @@
+// Application/Interfaces/ICategoryRepository.cs
 using Livy.Domain.Entities;
+using Livy.Domain.Interfaces;
 
 namespace Livy.Application.Interfaces;
 
-public interface ICategoryRepository
+/// <summary>
+/// Extiende IRepository&lt;Category&gt; con operaciones específicas de categorías.
+/// </summary>
+public interface ICategoryRepository : IRepository<Category>
 {
-    Task<Category?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IEnumerable<Category>> GetAllAsync(CancellationToken ct = default);
-    Task AddAsync(Category category, CancellationToken ct = default);
-    Task UpdateAsync(Category category, CancellationToken ct = default);
-    Task DeleteAsync(Guid id, CancellationToken ct = default);
     Task<bool> ExistsAsync(string name, CancellationToken ct = default);
 }

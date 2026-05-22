@@ -1,0 +1,38 @@
+## .gitignore para proyecto .NET / ASP.NET Core
+
+# Carpetas de build
+bin/
+obj/
+
+# Base de datos SQLite — nunca subir datos de desarrollo
+*.db
+*.db-shm
+*.db-wal
+
+# Configuración local con secrets (connection strings reales, API keys)
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider
+.idea/
+
+# VS Code (opcional — si lo comparten en equipo, eliminen esta línea)
+.vscode/
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Logs
+*.log
+logs/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

@@ -6,46 +6,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Livy.Infrastructure.Repositories;
 
-public class OrderRepository : IOrderRepository
+
+public class OrderRepository : Repository<Order>, IOrderRepository
 {
-    private readonly LivyDbContext _context;
+    private readonly LivyDbContext _ctx;
 
-    public OrderRepository(LivyDbContext context)
+    public OrderRepository(LivyDbContext ctx) : base(ctx)
     {
-        _context = context;
+        _ctx = ctx;
     }
 
-    public async Task<Order?> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        return await _context.Orders
-            .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.Id == id, ct);
-    }
+    /// <summary>Trae la orden con sus ítems en un solo JOIN (eager loading).</summary>
+    public async Task<Order?> GetByIdWithItemsAsync(Guid id, CancellationToken ct = default)
+        => await _ctx.Orders
+               .Include(o => o.Items)
+               .FirstOrDefaultAsync(o => o.Id == id, ct);
 
-    public async Task<IEnumerable<Order>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
-    {
-        return await _context.Orders
-            .AsNoTracking()
-            .Where(o => o.UserId == userId)
-            .Include(o => o.Items)
-            .OrderByDescending(o => o.CreatedAt)
-            .ToListAsync(ct);
-    }
-
-    public async Task AddAsync(Order order, CancellationToken ct = default)
-    {
-        await _context.Orders.AddAsync(order, ct);
-        await _context.SaveChangesAsync(ct); // ← FALTABA: sin esto los datos no se persisten
-    }
-
-    public async Task UpdateAsync(Order order, CancellationToken ct = default)
-    {
-        _context.Orders.Update(order);
-        await _context.SaveChangesAsync(ct); // ← FALTABA
-    }
+    public async Task<IEnumerable<Order>> GetByUserIdAsync(
+        Guid userId, CancellationToken ct = default)
+        => await _ctx.Orders
+               .AsNoTracking()
+               .Where(o => o.UserId == userId)
+               .Include(o => o.Items)
+               .OrderByDescending(o => o.CreatedAt)
+               .ToListAsync(ct);
 
     public async Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
-    {
-        return await _context.Orders.AnyAsync(o => o.Id == id, ct);
-    }
+        => await _ctx.Orders.AnyAsync(o => o.Id == id, ct);
 }

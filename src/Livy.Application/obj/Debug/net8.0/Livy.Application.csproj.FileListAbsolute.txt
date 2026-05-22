@@ -13,3 +13,4 @@ C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Application\obj\Debug\
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Application\obj\Debug\net8.0\refint\Livy.Application.dll
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Application\obj\Debug\net8.0\Livy.Application.pdb
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Application\obj\Debug\net8.0\ref\Livy.Application.dll
+C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Application\obj\Debug\net8.0\Livy.Application.sourcelink.json

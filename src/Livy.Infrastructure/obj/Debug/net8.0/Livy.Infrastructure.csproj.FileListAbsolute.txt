@@ -17,3 +17,4 @@ C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Infrastructure\obj\Deb
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Infrastructure\obj\Debug\net8.0\Livy.Infrastructure.pdb
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Infrastructure\obj\Debug\net8.0\Livy.Infrastructure.genruntimeconfig.cache
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Infrastructure\obj\Debug\net8.0\ref\Livy.Infrastructure.dll
+C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Infrastructure\obj\Debug\net8.0\Livy.Infrastructure.sourcelink.json

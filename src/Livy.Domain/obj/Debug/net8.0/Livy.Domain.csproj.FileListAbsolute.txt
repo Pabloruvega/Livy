@@ -9,3 +9,4 @@ C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Domain\obj\Debug\net8.
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Domain\obj\Debug\net8.0\refint\Livy.Domain.dll
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Domain\obj\Debug\net8.0\Livy.Domain.pdb
 C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Domain\obj\Debug\net8.0\ref\Livy.Domain.dll
+C:\Users\pablo\OneDrive\Escritorio\Facultad\Livy\src\Livy.Domain\obj\Debug\net8.0\Livy.Domain.sourcelink.json

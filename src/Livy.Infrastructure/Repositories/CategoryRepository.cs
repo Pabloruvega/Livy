@@ -6,49 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Livy.Infrastructure.Repositories;
 
-public class CategoryRepository : ICategoryRepository
+public class CategoryRepository : Repository<Category>, ICategoryRepository
 {
-    private readonly LivyDbContext _context;
+    private readonly LivyDbContext _ctx;
 
-    public CategoryRepository(LivyDbContext context)
+    public CategoryRepository(LivyDbContext ctx) : base(ctx)
     {
-        _context = context;
-    }
-
-    public async Task<Category?> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        return await _context.Categories.FindAsync(new object[] { id }, ct);
-    }
-
-    public async Task<IEnumerable<Category>> GetAllAsync(CancellationToken ct = default)
-    {
-        return await _context.Categories.AsNoTracking().ToListAsync(ct);
-    }
-
-    public async Task AddAsync(Category category, CancellationToken ct = default)
-    {
-        await _context.Categories.AddAsync(category, ct);
-        await _context.SaveChangesAsync(ct); // ← FALTABA
-    }
-
-    public async Task UpdateAsync(Category category, CancellationToken ct = default)
-    {
-        _context.Categories.Update(category);
-        await _context.SaveChangesAsync(ct); // ← FALTABA
-    }
-
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
-    {
-        var category = await GetByIdAsync(id, ct);
-        if (category is not null)
-        {
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync(ct); // ← FALTABA
-        }
+        _ctx = ctx;
     }
 
     public async Task<bool> ExistsAsync(string name, CancellationToken ct = default)
-    {
-        return await _context.Categories.AnyAsync(c => c.Name == name, ct);
-    }
+        => await _ctx.Categories.AnyAsync(c => c.Name == name, ct);
 }

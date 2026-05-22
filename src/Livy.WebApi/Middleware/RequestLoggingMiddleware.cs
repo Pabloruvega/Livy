@@ -3,9 +3,7 @@ using System.Diagnostics;
 
 namespace Livy.WebApi.Middleware;
 
-/// <summary>
-/// Loguea cada request HTTP: método, path, status code y tiempo de ejecución.
-/// </summary>
+
 public class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;

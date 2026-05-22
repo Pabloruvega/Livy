@@ -1,6 +1,8 @@
 // WebApi/Controllers/OrdersController.cs
+using Livy.Application.Common;
 using Livy.Application.DTOs.Order;
-using Livy.Application.Services;
+using Livy.Application.UseCases.Orders.Commands.CreateOrder;
+using Livy.Application.UseCases.Orders.Queries.GetOrderById;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Livy.WebApi.Controllers;
@@ -10,33 +12,38 @@ namespace Livy.WebApi.Controllers;
 [Produces("application/json")]
 public class OrdersController : ControllerBase
 {
-    private readonly IOrderService _service;
+    private readonly ICommandHandler<CreateOrderCommand, OrderDto>  _createHandler;
+    private readonly IQueryHandler<GetOrderByIdQuery, OrderDto>     _getByIdHandler;
 
-    public OrdersController(IOrderService service) => _service = service;
+    public OrdersController(
+        ICommandHandler<CreateOrderCommand, OrderDto>  createHandler,
+        IQueryHandler<GetOrderByIdQuery, OrderDto>     getByIdHandler)
+    {
+        _createHandler  = createHandler;
+        _getByIdHandler = getByIdHandler;
+    }
 
-    /// <summary>Obtiene una orden por Id (incluye sus ítems).</summary>
+  
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(OrderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var order = await _service.GetByIdAsync(id, ct);
-        return order is null ? NotFound() : Ok(order);
+        var result = await _getByIdHandler.HandleAsync(new GetOrderByIdQuery(id), ct);
+        return Ok(result);
     }
 
-    /// <summary>Obtiene todas las órdenes de un usuario.</summary>
-    [HttpGet("user/{userId:guid}")]
-    [ProducesResponseType(typeof(IEnumerable<OrderDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetByUser(Guid userId, CancellationToken ct)
-        => Ok(await _service.GetByUserIdAsync(userId, ct));
-
-    /// <summary>Crea una nueva orden y descuenta el stock automáticamente.</summary>
     [HttpPost]
     [ProducesResponseType(typeof(OrderDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateOrderDto dto, CancellationToken ct)
     {
-        var created = await _service.CreateAsync(dto, ct);
+        var command = new CreateOrderCommand(
+            dto.UserId,
+            dto.Items.Select(i => new CreateOrderItemCommand(i.ProductId, i.Quantity)).ToList()
+        );
+
+        var created = await _createHandler.HandleAsync(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 }

@@ -29,7 +29,7 @@ Livy/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/livy.git
+git clone https://github.com/Pabloruvega/livy.git
 cd livy
 ```
 
