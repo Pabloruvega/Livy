@@ -68,13 +68,15 @@ public class ProductService : IProductService
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         _logger.LogInformation("Eliminando producto con Id {Id}.", id);
-        var exists = await _repo.ExistsAsync(id, ct);
-        if (!exists) throw new ProductNotFoundException(id);
-        await _repo.DeleteAsync(id, ct);
+
+        // IRepository<T>.DeleteAsync recibe la entidad, no el Guid
+        var product = await _repo.GetByIdAsync(id, ct)
+            ?? throw new ProductNotFoundException(id);
+
+        await _repo.DeleteAsync(product, ct); // ← entidad, no id
         _logger.LogInformation("Producto {Id} eliminado.", id);
     }
 
-    // Mapeo manual — sin AutoMapper para mantener simple
     private static ProductDto MapToDto(Product p) => new()
     {
         Id          = p.Id,

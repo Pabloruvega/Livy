@@ -46,10 +46,11 @@ public class CategoryService : ICategoryService
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var cat = await _repo.GetByIdAsync(id, ct);
-        if (cat is null)
-            throw new DomainException($"Categoría con Id '{id}' no encontrada.");
-        await _repo.DeleteAsync(id, ct);
+        // IRepository<T>.DeleteAsync recibe la entidad, no el Guid
+        var cat = await _repo.GetByIdAsync(id, ct)
+            ?? throw new DomainException($"Categoría con Id '{id}' no encontrada.");
+
+        await _repo.DeleteAsync(cat, ct); // ← entidad, no id
         _logger.LogInformation("Categoría {Id} eliminada.", id);
     }
 }
