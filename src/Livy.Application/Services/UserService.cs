@@ -3,6 +3,7 @@ using Livy.Application.DTOs.User;
 using Livy.Application.Interfaces;
 using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
+using Livy.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,12 +13,17 @@ namespace Livy.Application.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _repo;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<UserService> _logger;
 
-    public UserService(IUserRepository repo, ILogger<UserService> logger)
+    public UserService(
+        IUserRepository repo,
+        IUnitOfWork unitOfWork,
+        ILogger<UserService> logger)
     {
-        _repo   = repo;
-        _logger = logger;
+        _repo       = repo;
+        _unitOfWork = unitOfWork;
+        _logger     = logger;
     }
 
     public async Task<UserDto> RegisterAsync(RegisterUserDto dto, CancellationToken ct = default)
@@ -30,7 +36,9 @@ public class UserService : IUserService
 
         var hash = HashPassword(dto.Password);
         var user = new User(dto.Email, dto.Name, hash);
+
         await _repo.AddAsync(user, ct);
+        await _unitOfWork.SaveChangesAsync(ct); // ← persiste en la BD
 
         _logger.LogInformation("Usuario registrado con Id {Id}.", user.Id);
         return MapToDto(user);
@@ -70,7 +78,7 @@ public class UserService : IUserService
         return user is null ? null : MapToDto(user);
     }
 
-    // Hash SHA-256 simple — en producción usar BCrypt o ASP.NET Identity
+    // SHA-256 — en producción usar BCrypt o ASP.NET Identity
     private static string HashPassword(string password)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
