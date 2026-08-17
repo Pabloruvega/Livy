@@ -15,7 +15,39 @@ namespace Livy.Infrastructure.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.27");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.30");
+
+            modelBuilder.Entity("Livy.Domain.Entities.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a1b2c3d4-0000-0000-0000-000000000001"),
+                            Name = "Electrónica"
+                        },
+                        new
+                        {
+                            Id = new Guid("a1b2c3d4-0000-0000-0000-000000000002"),
+                            Name = "Ropa"
+                        },
+                        new
+                        {
+                            Id = new Guid("a1b2c3d4-0000-0000-0000-000000000003"),
+                            Name = "Hogar"
+                        });
+                });
 
             modelBuilder.Entity("Livy.Domain.Entities.Order", b =>
                 {
@@ -81,6 +113,11 @@ namespace Livy.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -95,6 +132,8 @@ namespace Livy.Infrastructure.Migrations
                         .HasDefaultValue(0);
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("Name");
 
@@ -143,6 +182,20 @@ namespace Livy.Infrastructure.Migrations
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Livy.Domain.Entities.Product", b =>
+                {
+                    b.HasOne("Livy.Domain.Entities.Category", null)
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Livy.Domain.Entities.Category", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("Livy.Domain.Entities.Order", b =>

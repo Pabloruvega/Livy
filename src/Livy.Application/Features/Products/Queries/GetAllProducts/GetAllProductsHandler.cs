@@ -32,7 +32,8 @@ public class GetAllProductsHandler
             Price       = p.Price,
             Stock       = p.Stock,
             CategoryId  = p.CategoryId,
-            CreatedAt   = p.CreatedAt
+            CreatedAt   = p.CreatedAt,
+            IsActive    = p.IsActive
         });
     }
 }

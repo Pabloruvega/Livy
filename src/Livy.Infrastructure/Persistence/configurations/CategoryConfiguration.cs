@@ -3,7 +3,7 @@ using Livy.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Livy.Infrastructure.Persistence.Configurations; // ← FALTABA el namespace
+namespace Livy.Infrastructure.Persistence.Configurations; 
 
 public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 {

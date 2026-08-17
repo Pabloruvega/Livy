@@ -23,7 +23,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
         _logger.LogInformation("Ejecutando GetOrderByIdQuery para Id {Id}.", request.OrderId);
 
         var order = await _repo.GetByIdWithItemsAsync(request.OrderId, ct)
-            ?? throw new DomainException($"Orden con Id '{request.OrderId}' no encontrada.");
+            ?? throw new OrderNotFoundException(request.OrderId);
 
         return new OrderDto
         {

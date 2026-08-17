@@ -1,4 +1,6 @@
 // Application/ApplicationServiceRegistration.cs
+using FluentValidation;
+using Livy.Application.Common.Behaviors;
 using Livy.Application.Services;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +17,14 @@ public static class ApplicationServiceRegistration
         // automáticamente todos los IRequestHandler que encuentre.
         // No hay que registrar cada Handler manualmente.
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+        {
+            cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+            // ValidationBehavior corre ANTES que el Handler para cada Command/Query
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+        });
+
+        // Registra todos los AbstractValidator<T> del assembly (uno por Command)
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         // Services de User y Category (login/register no usan MediatR)
         services.AddScoped<IUserService,     UserService>();

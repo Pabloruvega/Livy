@@ -3,6 +3,7 @@ using Livy.Application.DTOs.Category;
 using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
+using Livy.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Livy.Application.Services;
@@ -10,12 +11,14 @@ namespace Livy.Application.Services;
 public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _repo;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CategoryService> _logger;
 
-    public CategoryService(ICategoryRepository repo, ILogger<CategoryService> logger)
+    public CategoryService(ICategoryRepository repo, IUnitOfWork unitOfWork, ILogger<CategoryService> logger)
     {
-        _repo   = repo;
-        _logger = logger;
+        _repo       = repo;
+        _unitOfWork = unitOfWork;
+        _logger     = logger;
     }
 
     public async Task<IEnumerable<CategoryDto>> GetAllAsync(CancellationToken ct = default)
@@ -41,6 +44,7 @@ public class CategoryService : ICategoryService
         _logger.LogInformation("Creando categoría '{Name}'.", dto.Name);
         var category = new Category(dto.Name);
         await _repo.AddAsync(category, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
         return new CategoryDto { Id = category.Id, Name = category.Name };
     }
 
@@ -48,9 +52,10 @@ public class CategoryService : ICategoryService
     {
         // IRepository<T>.DeleteAsync recibe la entidad, no el Guid
         var cat = await _repo.GetByIdAsync(id, ct)
-            ?? throw new DomainException($"Categoría con Id '{id}' no encontrada.");
+            ?? throw new CategoryNotFoundException(id);
 
         await _repo.DeleteAsync(cat, ct); // ← entidad, no id
+        await _unitOfWork.SaveChangesAsync(ct);
         _logger.LogInformation("Categoría {Id} eliminada.", id);
     }
 }

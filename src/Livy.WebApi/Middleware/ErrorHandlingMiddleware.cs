@@ -5,10 +5,7 @@ using System.Text.Json;
 
 namespace Livy.WebApi.Middleware;
 
-/// <summary>
-/// Middleware global que captura todas las excepciones no manejadas,
-/// las loguea y devuelve una respuesta JSON consistente al cliente.
-/// </summary>
+
 public class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -34,8 +31,18 @@ public class ErrorHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
+        // Errores de FluentValidation (Commands/Queries de MediatR) → 400 con errores por campo
+        if (ex is FluentValidation.ValidationException validationEx)
+        {
+            await WriteValidationErrorAsync(context, validationEx);
+            return;
+        }
+
         var (statusCode, message) = ex switch
         {
+            // Recurso no encontrado → 404 Not Found (chequear ANTES que DomainException,
+            // porque NotFoundException hereda de DomainException)
+            NotFoundException    => (HttpStatusCode.NotFound, ex.Message),
             // Excepciones del dominio → 400 Bad Request
             DomainException      => (HttpStatusCode.BadRequest, ex.Message),
             ArgumentException    => (HttpStatusCode.BadRequest, ex.Message),
@@ -57,6 +64,34 @@ public class ErrorHandlingMiddleware
         {
             status  = (int)statusCode,
             error   = message,
+            path    = context.Request.Path.ToString(),
+            traceId = context.TraceIdentifier
+        };
+
+        var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+        await context.Response.WriteAsync(json);
+    }
+
+    private async Task WriteValidationErrorAsync(HttpContext context, FluentValidation.ValidationException ex)
+    {
+        _logger.LogWarning("Error de validación en {Path}: {Errors}",
+            context.Request.Path, string.Join("; ", ex.Errors.Select(e => e.ErrorMessage)));
+
+        var errors = ex.Errors
+            .GroupBy(e => e.PropertyName)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+
+        context.Response.ContentType = "application/json";
+        context.Response.StatusCode  = (int)HttpStatusCode.BadRequest;
+
+        var response = new
+        {
+            status  = (int)HttpStatusCode.BadRequest,
+            errors,
             path    = context.Request.Path.ToString(),
             traceId = context.TraceIdentifier
         };

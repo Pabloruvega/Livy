@@ -50,7 +50,8 @@ public class CreateProductHandler
             Price       = product.Price,
             Stock       = product.Stock,
             CategoryId  = product.CategoryId,
-            CreatedAt   = product.CreatedAt
+            CreatedAt   = product.CreatedAt,
+            IsActive    = product.IsActive
         };
     }
 }

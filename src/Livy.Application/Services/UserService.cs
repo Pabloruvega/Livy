@@ -5,8 +5,6 @@ using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
 using Livy.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Livy.Application.Services;
 
@@ -14,16 +12,19 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _repo;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly ILogger<UserService> _logger;
 
     public UserService(
         IUserRepository repo,
         IUnitOfWork unitOfWork,
+        IJwtTokenService jwtTokenService,
         ILogger<UserService> logger)
     {
-        _repo       = repo;
-        _unitOfWork = unitOfWork;
-        _logger     = logger;
+        _repo            = repo;
+        _unitOfWork      = unitOfWork;
+        _jwtTokenService = jwtTokenService;
+        _logger          = logger;
     }
 
     public async Task<UserDto> RegisterAsync(RegisterUserDto dto, CancellationToken ct = default)
@@ -44,7 +45,7 @@ public class UserService : IUserService
         return MapToDto(user);
     }
 
-    public async Task<UserDto?> LoginAsync(LoginDto dto, CancellationToken ct = default)
+    public async Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default)
     {
         _logger.LogInformation("Intento de login para {Email}.", dto.Email);
 
@@ -55,15 +56,23 @@ public class UserService : IUserService
             return null;
         }
 
-        var hash = HashPassword(dto.Password);
-        if (user.PasswordHash != hash)
+        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
             _logger.LogWarning("Login fallido: contraseña incorrecta para {Email}.", dto.Email);
             return null;
         }
 
         _logger.LogInformation("Login exitoso para {Email}.", dto.Email);
-        return MapToDto(user);
+
+        var token = _jwtTokenService.GenerateToken(user);
+        return new AuthResponseDto
+        {
+            Token   = token,
+            Email   = user.Email,
+            Name    = user.Name,
+            Role    = user.Role,
+            Expires = _jwtTokenService.GetExpiration()
+        };
     }
 
     public async Task<IEnumerable<UserDto>> GetAllAsync(CancellationToken ct = default)
@@ -78,12 +87,8 @@ public class UserService : IUserService
         return user is null ? null : MapToDto(user);
     }
 
-    // SHA-256 — en producción usar BCrypt o ASP.NET Identity
     private static string HashPassword(string password)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToHexString(bytes);
-    }
+        => BCrypt.Net.BCrypt.HashPassword(password);
 
     private static UserDto MapToDto(User u) => new()
     {

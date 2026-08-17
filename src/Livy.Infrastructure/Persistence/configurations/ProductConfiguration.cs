@@ -32,6 +32,10 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.CategoryId).IsRequired();
         builder.Property(p => p.CreatedAt).IsRequired();
 
+        builder.Property(p => p.IsActive)
+               .IsRequired()
+               .HasDefaultValue(true);
+
         // Índice para búsquedas rápidas por nombre
         builder.HasIndex(p => p.Name);
     }

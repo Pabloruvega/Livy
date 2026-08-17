@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Livy.Application.DTOs.User;
 
-/// <summary>Request: datos para registrar un nuevo usuario</summary>
+
 public class RegisterUserDto
 {
     [Required(ErrorMessage = "El email es obligatorio.")]

@@ -1,4 +1,6 @@
 // Livy.Domain/Entities/Product.cs
+using Livy.Domain.Exceptions;
+
 namespace Livy.Domain.Entities;
 
 public class Product : BaseEntity
@@ -9,6 +11,7 @@ public class Product : BaseEntity
     public int Stock { get; private set; }
     public Guid CategoryId { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public bool IsActive { get; private set; }
 
     // Constructor privado para EF Core
     private Product() { }
@@ -17,9 +20,9 @@ public class Product : BaseEntity
     public Product(string name, string description, decimal price, int stock, Guid categoryId)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("El nombre es obligatorio.");
-        if (price < 0) throw new ArgumentException("El precio no puede ser negativo.");
-        if (stock < 0) throw new ArgumentException("El stock no puede ser negativo.");
+            throw new DomainException("El nombre es obligatorio.");
+        if (price < 0) throw new DomainException("El precio no puede ser negativo.");
+        if (stock < 0) throw new DomainException("El stock no puede ser negativo.");
 
         Name        = name;
         Description = description;
@@ -27,18 +30,36 @@ public class Product : BaseEntity
         Stock       = stock;
         CategoryId  = categoryId;
         CreatedAt   = DateTime.UtcNow;
+        IsActive    = true;
     }
 
     // Métodos de negocio
     public void UpdatePrice(decimal newPrice)
     {
-        if (newPrice < 0) throw new ArgumentException("Precio inválido.");
+        if (newPrice < 0) throw new DomainException("Precio inválido.");
         Price = newPrice;
+    }
+
+    public void Update(string name, string description, decimal price, int stock, Guid categoryId)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre es obligatorio.");
+        if (price < 0) throw new DomainException("El precio no puede ser negativo.");
+        if (stock < 0) throw new DomainException("El stock no puede ser negativo.");
+
+        Name        = name;
+        Description = description;
+        Price       = price;
+        Stock       = stock;
+        CategoryId  = categoryId;
     }
 
     public void ReduceStock(int quantity)
     {
-        if (quantity > Stock) throw new InvalidOperationException("Stock insuficiente.");
+        if (quantity > Stock) throw new InsufficientStockException(Name, quantity, Stock);
         Stock -= quantity;
     }
+
+    public void Deactivate() => IsActive = false;
+    public void Activate() => IsActive = true;
 }
