@@ -1,6 +1,8 @@
 // WebApi/Program.cs
 using Livy.Application;
+using Livy.Application.Services;
 using Livy.Infrastructure;
+using Livy.WebApi;
 using Livy.WebApi.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -84,6 +86,13 @@ builder.Logging.AddDebug();
 // ─── Pipeline HTTP ────────────────────────────────────────────────────────────
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+    var seedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await DbSeeder.SeedAdminUserAsync(userService, app.Configuration, seedLogger);
+}
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ErrorHandlingMiddleware>();

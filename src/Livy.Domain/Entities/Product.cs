@@ -60,6 +60,9 @@ public class Product : BaseEntity
         Stock -= quantity;
     }
 
+    // Compensación cuando un pago es rechazado: el stock reservado vuelve a estar disponible.
+    public void RestoreStock(int quantity) => Stock += quantity;
+
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;
 }

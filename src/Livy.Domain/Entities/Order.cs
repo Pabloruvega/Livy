@@ -9,6 +9,7 @@ public class Order : BaseEntity
     public DateTime CreatedAt { get; private set; }
     public OrderStatus Status { get; private set; }
     public decimal Total { get; private set; }
+    public string? PaymentTransactionCode { get; private set; }
 
     // Colección de items — EF Core la gestiona como relación 1:N
     private readonly List<OrderItem> _items = new();
@@ -30,5 +31,18 @@ public class Order : BaseEntity
         var item = new OrderItem(Id, product.Id, product.Price, quantity);
         _items.Add(item);
         Total += item.Subtotal;
+    }
+
+    // El pago se confirma como un paso posterior a la creación (llamada al PaymentService).
+    public void ConfirmPayment(string transactionCode)
+    {
+        Status = OrderStatus.Confirmed;
+        PaymentTransactionCode = transactionCode;
+    }
+
+    public void RejectPayment(string transactionCode)
+    {
+        Status = OrderStatus.PaymentRejected;
+        PaymentTransactionCode = transactionCode;
     }
 }

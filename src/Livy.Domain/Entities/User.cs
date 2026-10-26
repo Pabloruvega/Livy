@@ -17,4 +17,6 @@ public class User : BaseEntity
         PasswordHash = passwordHash;
         CreatedAt    = DateTime.UtcNow;
     }
+
+    public void PromoteToAdmin() => Role = "Admin";
 }

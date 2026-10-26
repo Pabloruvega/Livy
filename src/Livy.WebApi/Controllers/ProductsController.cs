@@ -49,6 +49,7 @@ public class ProductsController : ControllerBase
         => Ok(await _mediator.Send(new GetProductByIdQuery(id), ct));
 
     /// Crea un nuevo producto
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,6 +62,7 @@ public class ProductsController : ControllerBase
     }
 
     /// Actualiza un producto existente
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -72,6 +74,7 @@ public class ProductsController : ControllerBase
     }
 
     /// Elimina un producto
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,6 +85,7 @@ public class ProductsController : ControllerBase
     }
 
     /// Activa un producto (IsActive = true)
+    [Authorize(Roles = "Admin")]
     [HttpPatch("{id:guid}/activate")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -89,6 +93,7 @@ public class ProductsController : ControllerBase
         => Ok(await _mediator.Send(new ActivateProductCommand(id), ct));
 
     /// Desactiva un producto (IsActive = false)
+    [Authorize(Roles = "Admin")]
     [HttpPatch("{id:guid}/deactivate")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

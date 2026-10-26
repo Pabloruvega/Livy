@@ -9,4 +9,5 @@ public interface IUserService
     Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default);
     Task<IEnumerable<UserDto>> GetAllAsync(CancellationToken ct = default);
     Task<UserDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<UserDto> PromoteToAdminAsync(Guid userId, CancellationToken ct = default);
 }

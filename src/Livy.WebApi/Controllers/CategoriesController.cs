@@ -1,6 +1,7 @@
 // WebApi/Controllers/CategoriesController.cs
 using Livy.Application.DTOs.Category;
 using Livy.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Livy.WebApi.Controllers;
@@ -10,9 +11,9 @@ namespace Livy.WebApi.Controllers;
 [Produces("application/json")]
 public class CategoriesController : ControllerBase
 {
-    private readonly ICategoryService _service;
+    private readonly ICategoryService _service; // es el campo de la clase que almacena la instancia del servicio de categorías
 
-    public CategoriesController(ICategoryService service) => _service = service;
+    public CategoriesController(ICategoryService service) => _service = service; // service es el parametro del constructor
 
     /// <summary>Obtiene todas las categorías.</summary>
     [HttpGet]
@@ -31,6 +32,7 @@ public class CategoriesController : ControllerBase
     }
 
     /// <summary>Crea una nueva categoría.</summary>
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ProducesResponseType(typeof(CategoryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -41,6 +43,7 @@ public class CategoriesController : ControllerBase
     }
 
     /// <summary>Elimina una categoría.</summary>
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

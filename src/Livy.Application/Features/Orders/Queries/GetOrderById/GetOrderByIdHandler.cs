@@ -27,12 +27,13 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
 
         return new OrderDto
         {
-            Id        = order.Id,
-            UserId    = order.UserId,
-            Status    = order.Status.ToString(),
-            Total     = order.Total,
-            CreatedAt = order.CreatedAt,
-            Items     = order.Items.Select(i => new OrderItemDto
+            Id                     = order.Id,
+            UserId                 = order.UserId,
+            Status                 = order.Status.ToString(),
+            Total                  = order.Total,
+            CreatedAt              = order.CreatedAt,
+            PaymentTransactionCode = order.PaymentTransactionCode,
+            Items                  = order.Items.Select(i => new OrderItemDto
             {
                 Id        = i.Id,
                 ProductId = i.ProductId,

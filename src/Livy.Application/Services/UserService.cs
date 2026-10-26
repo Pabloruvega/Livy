@@ -87,6 +87,19 @@ public class UserService : IUserService
         return user is null ? null : MapToDto(user);
     }
 
+    public async Task<UserDto> PromoteToAdminAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await _repo.GetByIdAsync(userId, ct)
+            ?? throw new UserNotFoundException(userId);
+
+        user.PromoteToAdmin();
+        await _repo.UpdateAsync(user, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Usuario {Id} promovido a Admin.", user.Id);
+        return MapToDto(user);
+    }
+
     private static string HashPassword(string password)
         => BCrypt.Net.BCrypt.HashPassword(password);
 

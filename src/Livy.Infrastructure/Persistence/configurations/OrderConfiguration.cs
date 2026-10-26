@@ -24,6 +24,9 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
                .HasConversion<string>()
                .HasMaxLength(20);
 
+        builder.Property(o => o.PaymentTransactionCode)
+               .HasMaxLength(50);
+
         builder.HasMany(o => o.Items)
                .WithOne()  
                .HasForeignKey(i => i.OrderId)
