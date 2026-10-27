@@ -1,7 +1,6 @@
 // Infrastructure/InfrastructureServiceExtension.cs
 using Livy.Application.Contracts.External;
 using Livy.Application.Contracts.Persistence;
-using Livy.Application.Services;
 using Livy.Domain.Interfaces;
 using Livy.Infrastructure.ExternalServices.Payment;
 using Livy.Infrastructure.Persistence;

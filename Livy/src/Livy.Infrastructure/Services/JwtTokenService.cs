@@ -1,5 +1,5 @@
 // Infrastructure/Services/JwtTokenService.cs
-using Livy.Application.Services;
+using Livy.Application.Contracts.External;
 using Livy.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;

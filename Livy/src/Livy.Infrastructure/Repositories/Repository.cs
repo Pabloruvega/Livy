@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Livy.Domain.Entities;
 using Livy.Domain.Interfaces;
+using Livy.Infrastructure.Persistence;
 
-namespace Livy.Infrastructure.Persistence;
+namespace Livy.Infrastructure.Repositories;
 
 public class Repository<T> : IRepository<T> where T : BaseEntity
 {

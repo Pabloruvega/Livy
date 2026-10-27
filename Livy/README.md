@@ -66,13 +66,13 @@ Livy.Application/
 
 ```bash
 git clone https://github.com/Pabloruvega/Livy.git
-cd livy
+cd Livy
 ```
 
 ### 2. Restaurar paquetes NuGet
 
 ```bash
-dotnet restore
+dotnet restore Livy/Livy.sln
 ```
 
 ### 3. Instalar la herramienta de migraciones *(solo la primera vez)*
@@ -85,8 +85,8 @@ dotnet tool install --global dotnet-ef
 
 ```bash
 dotnet ef database update \
-  --project src/Livy.Infrastructure \
-  --startup-project src/Livy.WebApi
+  --project Livy/src/Livy.Infrastructure \
+  --startup-project Livy/src/Livy.WebApi
 ```
 
 > Esto crea automáticamente el archivo `ecommerce.db` en la carpeta `src/Livy.WebApi/`.
@@ -94,7 +94,7 @@ dotnet ef database update \
 ### 5. Ejecutar el proyecto
 
 ```bash
-dotnet run --project src/Livy.WebApi
+dotnet run --project Livy/src/Livy.WebApi
 ```
 
 ### 6. Abrir Swagger
@@ -225,18 +225,18 @@ El proyecto usa **SQLite** — no requiere instalar nada adicional.
 ```bash
 # Crear una nueva migración
 dotnet ef migrations add NombreMigracion \
-  --project src/Livy.Infrastructure \
-  --startup-project src/Livy.WebApi
+  --project Livy/src/Livy.Infrastructure \
+  --startup-project Livy/src/Livy.WebApi
 
 # Aplicar migraciones pendientes
 dotnet ef database update \
-  --project src/Livy.Infrastructure \
-  --startup-project src/Livy.WebApi
+  --project Livy/src/Livy.Infrastructure \
+  --startup-project Livy/src/Livy.WebApi
 
 # Revertir todas las migraciones
 dotnet ef database update 0 \
-  --project src/Livy.Infrastructure \
-  --startup-project src/Livy.WebApi
+  --project Livy/src/Livy.Infrastructure \
+  --startup-project Livy/src/Livy.WebApi
 ```
 
 ---
