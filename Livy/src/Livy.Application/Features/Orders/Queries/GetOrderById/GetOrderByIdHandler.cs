@@ -1,4 +1,5 @@
 // Application/Features/Orders/Queries/GetOrderById/GetOrderByIdHandler.cs
+using Livy.Application.Common.Exceptions;
 using Livy.Application.Contracts.Persistence;
 using Livy.Application.DTOs.Order;
 using Livy.Domain.Exceptions;
@@ -25,22 +26,9 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
         var order = await _repo.GetByIdWithItemsAsync(request.OrderId, ct)
             ?? throw new OrderNotFoundException(request.OrderId);
 
-        return new OrderDto
-        {
-            Id                     = order.Id,
-            UserId                 = order.UserId,
-            Status                 = order.Status.ToString(),
-            Total                  = order.Total,
-            CreatedAt              = order.CreatedAt,
-            PaymentTransactionCode = order.PaymentTransactionCode,
-            Items                  = order.Items.Select(i => new OrderItemDto
-            {
-                Id        = i.Id,
-                ProductId = i.ProductId,
-                UnitPrice = i.UnitPrice,
-                Quantity  = i.Quantity,
-                Subtotal  = i.Subtotal
-            }).ToList()
-        };
+        if (!request.IsAdmin && !order.IsOwnedBy(request.RequestingUserId))
+            throw new ForbiddenAccessException("No tenés permiso para ver esta orden.");
+
+        return order.ToDto();
     }
 }

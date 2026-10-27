@@ -17,4 +17,7 @@ public class CategoryRepository : Repository<Category>, ICategoryRepository
 
     public async Task<bool> ExistsAsync(string name, CancellationToken ct = default)
         => await _ctx.Categories.AnyAsync(c => c.Name == name, ct);
+
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
+        => await _ctx.Categories.AnyAsync(c => c.Id == id, ct);
 }

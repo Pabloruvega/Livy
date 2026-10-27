@@ -1,4 +1,5 @@
 // WebApi/Middleware/ErrorHandlingMiddleware.cs
+using Livy.Application.Common.Exceptions;
 using Livy.Domain.Exceptions;
 using System.Net;
 using System.Text.Json;
@@ -43,6 +44,8 @@ public class ErrorHandlingMiddleware
             // Recurso no encontrado → 404 Not Found (chequear ANTES que DomainException,
             // porque NotFoundException hereda de DomainException)
             NotFoundException    => (HttpStatusCode.NotFound, ex.Message),
+            // Token válido pero sin permiso sobre el recurso → 403 Forbidden
+            ForbiddenAccessException => (HttpStatusCode.Forbidden, ex.Message),
             // Excepciones del dominio → 400 Bad Request
             DomainException      => (HttpStatusCode.BadRequest, ex.Message),
             ArgumentException    => (HttpStatusCode.BadRequest, ex.Message),

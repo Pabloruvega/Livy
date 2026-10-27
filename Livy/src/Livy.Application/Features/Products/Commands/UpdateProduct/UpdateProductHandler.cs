@@ -10,18 +10,21 @@ namespace Livy.Application.Features.Products.Commands.UpdateProduct;
 
 public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, ProductDto>
 {
-    private readonly IProductRepository _repo;
-    private readonly IUnitOfWork        _unitOfWork;
+    private readonly IProductRepository  _repo;
+    private readonly ICategoryRepository _categoryRepo;
+    private readonly IUnitOfWork         _unitOfWork;
     private readonly ILogger<UpdateProductHandler> _logger;
 
     public UpdateProductHandler(
         IProductRepository repo,
+        ICategoryRepository categoryRepo,
         IUnitOfWork unitOfWork,
         ILogger<UpdateProductHandler> logger)
     {
-        _repo       = repo;
-        _unitOfWork = unitOfWork;
-        _logger     = logger;
+        _repo         = repo;
+        _categoryRepo = categoryRepo;
+        _unitOfWork   = unitOfWork;
+        _logger       = logger;
     }
 
     public async Task<ProductDto> Handle(UpdateProductCommand request, CancellationToken ct)
@@ -30,6 +33,10 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Produc
 
         var product = await _repo.GetByIdAsync(request.ProductId, ct)
             ?? throw new ProductNotFoundException(request.ProductId);
+
+        // Sin esto, una CategoryId inexistente termina en un 500 por violación de FK al guardar
+        if (!await _categoryRepo.ExistsAsync(request.CategoryId, ct))
+            throw new CategoryNotFoundException(request.CategoryId);
 
         product.Update(request.Name, request.Description, request.Price, request.Stock, request.CategoryId);
 

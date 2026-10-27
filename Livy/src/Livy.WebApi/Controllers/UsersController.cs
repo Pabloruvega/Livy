@@ -5,6 +5,7 @@ using Livy.Application.Features.Users.Commands.PromoteToAdmin;
 using Livy.Application.Features.Users.Commands.RegisterUser;
 using Livy.Application.Features.Users.Queries.GetAllUsers;
 using Livy.Application.Features.Users.Queries.GetUserById;
+using Livy.WebApi.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -51,12 +52,15 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken ct)
         => Ok(await _mediator.Send(new GetAllUsersQuery(), ct));
 
+    // Cada usuario puede verse a sí mismo; un Admin, a cualquiera (si no → 403).
     // Si no existe, el handler lanza UserNotFoundException → 404 vía ErrorHandlingMiddleware.
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
-        => Ok(await _mediator.Send(new GetUserByIdQuery(id), ct));
+        => Ok(await _mediator.Send(
+            new GetUserByIdQuery(id, User.GetUserId(), User.IsInRole("Admin")), ct));
 
     // Solo un Admin puede crear otros Admins — el primero sale del seed de arranque.
     [Authorize(Roles = "Admin")]

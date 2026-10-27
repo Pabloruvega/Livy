@@ -1,7 +1,7 @@
 // Application/ApplicationServiceRegistration.cs
 using FluentValidation;
 using Livy.Application.Common.Behaviors;
-using Livy.Application.Services;
+using Livy.Application.Features.Orders.Common;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -26,9 +26,8 @@ public static class ApplicationServiceRegistration
         // Registra todos los AbstractValidator<T> del assembly (uno por Command)
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
-        // Services de User y Category (login/register no usan MediatR)
-        services.AddScoped<IUserService,     UserService>();
-        services.AddScoped<ICategoryService, CategoryService>();
+        // Llamada al PaymentService + aplicación del resultado a la orden (CreateOrder y PayOrder)
+        services.AddScoped<OrderPaymentProcessor>();
 
         return services;
     }

@@ -1,5 +1,6 @@
 using Livy.Application.Contracts.External;
 using Microsoft.Extensions.Logging;
+using Polly.Timeout;
 using System.Net.Http.Json;
 
 namespace Livy.Infrastructure.ExternalServices.Payment;
@@ -31,9 +32,32 @@ public class PaymentClient : IPaymentClient
             }
 
             var body = await response.Content.ReadFromJsonAsync<ProcessPaymentApiResponse>(ct);
-            return body is null ? null : new PaymentResult(body.Status, body.TransactionCode);
+            if (body is null)
+                return null;
+
+            // Traducción del string del JSON al resultado tipado de Application.
+            PaymentOutcome? outcome = body.Status switch
+            {
+                "Approved" => PaymentOutcome.Approved,
+                "Rejected" => PaymentOutcome.Rejected,
+                _          => null
+            };
+
+            if (outcome is null)
+            {
+                _logger.LogWarning(
+                    "PaymentService devolvió un estado desconocido '{Status}' para la orden {OrderId}; se trata como no disponible.",
+                    body.Status, orderId);
+                return null;
+            }
+
+            return new PaymentResult(outcome.Value, body.TransactionCode);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex) when (
+            ex is HttpRequestException            // conexión rechazada / error de red en el último intento
+               or TimeoutRejectedException        // el último intento superó el timeout por intento de Polly
+            || (ex is OperationCanceledException  // timeout total de HttpClient (TaskCanceledException)...
+                && !ct.IsCancellationRequested))  // ...pero NO si el que canceló fue el cliente: esa se propaga
         {
             // PaymentService caído, o se agotaron los reintentos de la política de Polly.
             _logger.LogError(ex, "No se pudo contactar a PaymentService para la orden {OrderId}.", orderId);

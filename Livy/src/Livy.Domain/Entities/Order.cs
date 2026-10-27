@@ -53,6 +53,12 @@ public class Order : BaseEntity
         PaymentTransactionCode = transactionCode;
     }
 
+    // Se llama ANTES de contactar al PaymentService, así una orden que ya no está
+    // Pending falla aunque el servicio de pagos no responda.
+    public void EnsureCanProcessPayment() => EnsurePending("procesar el pago de");
+
+    public bool IsOwnedBy(Guid userId) => UserId == userId;
+
     private void EnsurePending(string action)
     {
         if (Status != OrderStatus.Pending)

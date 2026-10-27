@@ -1,4 +1,5 @@
 // Application/Features/Users/Queries/GetUserById/GetUserByIdHandler.cs
+using Livy.Application.Common.Exceptions;
 using Livy.Application.Contracts.Persistence;
 using Livy.Application.DTOs.User;
 using Livy.Domain.Exceptions;
@@ -16,6 +17,9 @@ public class GetUserByIdHandler : IRequestHandler<GetUserByIdQuery, UserDto>
     {
         var user = await _repo.GetByIdAsync(request.UserId, ct)
             ?? throw new UserNotFoundException(request.UserId);
+
+        if (!request.IsAdmin && user.Id != request.RequestingUserId)
+            throw new ForbiddenAccessException("No tenés permiso para ver este usuario.");
 
         return user.ToDto();
     }

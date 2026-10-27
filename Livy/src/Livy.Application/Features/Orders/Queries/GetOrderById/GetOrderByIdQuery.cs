@@ -4,4 +4,5 @@ using MediatR;
 
 namespace Livy.Application.Features.Orders.Queries.GetOrderById;
 
-public record GetOrderByIdQuery(Guid OrderId) : IRequest<OrderDto>;
+// RequestingUserId e IsAdmin salen del token: el dueño ve su orden, el Admin ve cualquiera.
+public record GetOrderByIdQuery(Guid OrderId, Guid RequestingUserId, bool IsAdmin) : IRequest<OrderDto>;
