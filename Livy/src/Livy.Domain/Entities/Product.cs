@@ -56,12 +56,17 @@ public class Product : BaseEntity
 
     public void ReduceStock(int quantity)
     {
+        if (quantity <= 0) throw new DomainException("La cantidad debe ser mayor a cero.");
         if (quantity > Stock) throw new InsufficientStockException(Name, quantity, Stock);
         Stock -= quantity;
     }
 
     // Compensación cuando un pago es rechazado: el stock reservado vuelve a estar disponible.
-    public void RestoreStock(int quantity) => Stock += quantity;
+    public void RestoreStock(int quantity)
+    {
+        if (quantity <= 0) throw new DomainException("La cantidad debe ser mayor a cero.");
+        Stock += quantity;
+    }
 
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;

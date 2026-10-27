@@ -1,5 +1,6 @@
 // Livy.Domain/Entities/Order.cs
 using Livy.Domain.Enums;
+using Livy.Domain.Exceptions;
 
 namespace Livy.Domain.Entities;
 
@@ -27,22 +28,35 @@ public class Order : BaseEntity
 
     public void AddItem(Product product, int quantity)
     {
+        if (!product.IsActive)
+            throw new DomainException($"El producto '{product.Name}' no está disponible.");
+
         product.ReduceStock(quantity);  // regla de negocio en el dominio
         var item = new OrderItem(Id, product.Id, product.Price, quantity);
         _items.Add(item);
         Total += item.Subtotal;
     }
 
-    // El pago se confirma como un paso posterior a la creación (llamada al PaymentService).
-    public void ConfirmPayment(string transactionCode)
+    // El pago se resuelve como un paso posterior a la creación (llamada al PaymentService).
+    // Solo una orden Pending puede pasar a Paid o PaymentRejected.
+    public void MarkAsPaid(string transactionCode)
     {
-        Status = OrderStatus.Confirmed;
+        EnsurePending("marcar como pagada");
+        Status = OrderStatus.Paid;
         PaymentTransactionCode = transactionCode;
     }
 
     public void RejectPayment(string transactionCode)
     {
+        EnsurePending("rechazar el pago de");
         Status = OrderStatus.PaymentRejected;
         PaymentTransactionCode = transactionCode;
+    }
+
+    private void EnsurePending(string action)
+    {
+        if (Status != OrderStatus.Pending)
+            throw new DomainException(
+                $"No se puede {action} la orden {Id}: su estado es {Status} y debe ser {OrderStatus.Pending}.");
     }
 }

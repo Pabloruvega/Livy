@@ -1,9 +1,9 @@
 // WebApi/Program.cs
 using Livy.Application;
-using Livy.Application.Services;
 using Livy.Infrastructure;
 using Livy.WebApi;
 using Livy.WebApi.Middleware;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -89,9 +89,9 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+    var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
     var seedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await DbSeeder.SeedAdminUserAsync(userService, app.Configuration, seedLogger);
+    await DbSeeder.SeedAdminUserAsync(mediator, app.Configuration, seedLogger);
 }
 
 app.UseMiddleware<RequestLoggingMiddleware>();

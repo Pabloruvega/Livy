@@ -9,5 +9,6 @@ Confirmed = 2,
 Shipped = 3,
 Delivered = 4,
 Cancelled = 5,
-PaymentRejected = 6
+PaymentRejected = 6,
+Paid = 7
 }

@@ -1,6 +1,7 @@
 // Infrastructure/Repositories/UserRepository.cs
 using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
+using Livy.Domain.ValueObjects;
 using Livy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,12 +16,14 @@ public class UserRepository : Repository<User>, IUserRepository
         _ctx = ctx;
     }
 
-    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+    // Se compara la propiedad completa contra el Value Object: EF Core aplica el
+    // value converter al parámetro. u.Email.Value no se puede traducir a SQL.
+    public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
         => await _ctx.Users
                .AsNoTracking()
                .FirstOrDefaultAsync(u => u.Email == email, ct);
 
-    public async Task<bool> IsEmailUniqueAsync(string email, CancellationToken ct = default)
+    public async Task<bool> IsEmailUniqueAsync(Email email, CancellationToken ct = default)
         => !await _ctx.Users.AnyAsync(u => u.Email == email, ct);
 
 

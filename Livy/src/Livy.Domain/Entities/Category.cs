@@ -1,3 +1,5 @@
+using Livy.Domain.Exceptions;
+
 namespace Livy.Domain.Entities;
 
 public class Category : BaseEntity
@@ -13,14 +15,17 @@ public class Category : BaseEntity
 
     public Category(string name)
     {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre de la categoría es obligatorio.");
+
         Name = name;
-    
-        // CreatedAt ya viene de BaseEntity
     }
 
     public void Update(string name)
     {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre de la categoría es obligatorio.");
+
         Name = name;
-       
     }
 }

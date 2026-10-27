@@ -79,7 +79,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, OrderDto>
     }
 
     // Llama al PaymentService y hace que la orden actúe según la respuesta:
-    // - Approved  -> la orden queda Confirmed.
+    // - Approved  -> la orden queda Paid.
     // - Rejected  -> la orden queda PaymentRejected y se devuelve el stock reservado.
     // - sin respuesta (caído/timeout, ya reintentado por la política de Polly) -> la
     //   orden queda Pending (el stock se mantiene reservado) y se avisa al cliente
@@ -97,7 +97,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, OrderDto>
 
         if (result.Status == "Approved")
         {
-            order.ConfirmPayment(result.TransactionCode);
+            order.MarkAsPaid(result.TransactionCode);
             return "Pago aprobado.";
         }
 

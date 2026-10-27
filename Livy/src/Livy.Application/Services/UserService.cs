@@ -5,6 +5,7 @@ using Livy.Application.Contracts.Persistence;
 using Livy.Domain.Entities;
 using Livy.Domain.Exceptions;
 using Livy.Domain.Interfaces;
+using Livy.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Livy.Application.Services;
@@ -32,12 +33,14 @@ public class UserService : IUserService
     {
         _logger.LogInformation("Registrando usuario con email {Email}.", dto.Email);
 
-        var isUnique = await _repo.IsEmailUniqueAsync(dto.Email, ct);
+        var email = Email.Create(dto.Email);  // valida y normaliza (trim + minúsculas)
+
+        var isUnique = await _repo.IsEmailUniqueAsync(email, ct);
         if (!isUnique)
-            throw new DomainException($"El email '{dto.Email}' ya está registrado.");
+            throw new DomainException($"El email '{email.Value}' ya está registrado.");
 
         var hash = HashPassword(dto.Password);
-        var user = new User(dto.Email, dto.Name, hash);
+        var user = new User(email, dto.Name, hash);
 
         await _repo.AddAsync(user, ct);
         await _unitOfWork.SaveChangesAsync(ct); // ← persiste en la BD
@@ -50,7 +53,7 @@ public class UserService : IUserService
     {
         _logger.LogInformation("Intento de login para {Email}.", dto.Email);
 
-        var user = await _repo.GetByEmailAsync(dto.Email, ct);
+        var user = await _repo.GetByEmailAsync(Email.Create(dto.Email), ct);
         if (user is null)
         {
             _logger.LogWarning("Login fallido: email {Email} no encontrado.", dto.Email);
@@ -69,7 +72,7 @@ public class UserService : IUserService
         return new AuthResponseDto
         {
             Token   = token,
-            Email   = user.Email,
+            Email   = user.Email.Value,
             Name    = user.Name,
             Role    = user.Role,
             Expires = _jwtTokenService.GetExpiration()
@@ -107,7 +110,7 @@ public class UserService : IUserService
     private static UserDto MapToDto(User u) => new()
     {
         Id        = u.Id,
-        Email     = u.Email,
+        Email     = u.Email.Value,
         Name      = u.Name,
         Role      = u.Role,
         CreatedAt = u.CreatedAt
