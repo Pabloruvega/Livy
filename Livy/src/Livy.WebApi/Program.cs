@@ -2,6 +2,7 @@
 using Livy.Application;
 using Livy.Infrastructure;
 using Livy.WebApi;
+using Livy.WebApi.ExceptionHandling;
 using Livy.WebApi.Middleware;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -78,6 +79,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// ─── Manejo global de errores (RFC 7807 ProblemDetails) ───────────────────────
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>().AddProblemDetails();
+
 // Logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -94,8 +98,9 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAdminUserAsync(mediator, app.Configuration, seedLogger);
 }
 
+app.UseExceptionHandler(); // ← primer middleware: atrapa excepciones de todo lo que sigue
+app.UseStatusCodePages();  // ← 401/403/404 sin cuerpo → ProblemDetails (vía AddProblemDetails)
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<ErrorHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

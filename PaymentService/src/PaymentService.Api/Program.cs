@@ -1,3 +1,4 @@
+using PaymentService.Api.ExceptionHandling;
 using PaymentService.Api.Middleware;
 using PaymentService.Application;
 using PaymentService.Infrastructure;
@@ -47,6 +48,9 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplicationServices();
 
+// ─── Manejo global de errores (RFC 7807 ProblemDetails) ───────────────────────
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>().AddProblemDetails();
+
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
@@ -55,7 +59,8 @@ builder.Logging.AddDebug();
 
 var app = builder.Build();
 
-app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseExceptionHandler(); // ← primer middleware: atrapa excepciones de todo lo que sigue
+app.UseStatusCodePages();  // ← 404/405 sin cuerpo → ProblemDetails (vía AddProblemDetails)
 app.UseMiddleware<ApiKeyMiddleware>();
 
 if (app.Environment.IsDevelopment())

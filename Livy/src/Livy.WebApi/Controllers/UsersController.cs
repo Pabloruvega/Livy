@@ -14,7 +14,6 @@ namespace Livy.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Produces("application/json")]
 [Authorize]
 public class UsersController : ControllerBase
 {
@@ -41,7 +40,11 @@ public class UsersController : ControllerBase
     {
         var auth = await _mediator.Send(new LoginCommand(dto.Email, dto.Password), ct);
         if (auth is null)
-            return Unauthorized(new { error = "Credenciales inválidas." });
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title:      "Unauthorized",
+                detail:     "Credenciales inválidas.",
+                instance:   HttpContext.Request.Path);
         return Ok(auth);
     }
 
@@ -53,7 +56,7 @@ public class UsersController : ControllerBase
         => Ok(await _mediator.Send(new GetAllUsersQuery(), ct));
 
     // Cada usuario puede verse a sí mismo; un Admin, a cualquiera (si no → 403).
-    // Si no existe, el handler lanza UserNotFoundException → 404 vía ErrorHandlingMiddleware.
+    // Si no existe, el handler lanza UserNotFoundException → 404 vía GlobalExceptionHandler.
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

@@ -12,7 +12,6 @@ namespace Livy.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Produces("application/json")]
 [Authorize]
 public class OrdersController : ControllerBase
 {

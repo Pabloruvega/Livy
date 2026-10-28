@@ -21,7 +21,7 @@ public class Product : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("El nombre es obligatorio.");
-        if (price < 0) throw new DomainException("El precio no puede ser negativo.");
+        if (price <= 0) throw new DomainException("El precio debe ser mayor a cero.");
         if (stock < 0) throw new DomainException("El stock no puede ser negativo.");
 
         Name        = name;
@@ -36,7 +36,7 @@ public class Product : BaseEntity
     // Métodos de negocio
     public void UpdatePrice(decimal newPrice)
     {
-        if (newPrice < 0) throw new DomainException("Precio inválido.");
+        if (newPrice <= 0) throw new DomainException("El precio debe ser mayor a cero.");
         Price = newPrice;
     }
 
@@ -44,7 +44,7 @@ public class Product : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("El nombre es obligatorio.");
-        if (price < 0) throw new DomainException("El precio no puede ser negativo.");
+        if (price <= 0) throw new DomainException("El precio debe ser mayor a cero.");
         if (stock < 0) throw new DomainException("El stock no puede ser negativo.");
 
         Name        = name;

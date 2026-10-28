@@ -30,8 +30,12 @@ public class ApiKeyMiddleware
         if (!context.Request.Headers.TryGetValue(HeaderName, out var providedKey) ||
             providedKey != _apiKey)
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await context.Response.WriteAsJsonAsync(new { error = $"Header '{HeaderName}' ausente o inválido." });
+            // Results.Problem escribe vía IProblemDetailsService → application/problem+json con traceId
+            await Results.Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Unauthorized",
+                detail: $"Header '{HeaderName}' ausente o inválido.",
+                instance: context.Request.Path).ExecuteAsync(context);
             return;
         }
 

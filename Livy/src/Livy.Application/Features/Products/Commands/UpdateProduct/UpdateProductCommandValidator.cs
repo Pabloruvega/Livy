@@ -18,7 +18,7 @@ public class UpdateProductCommandValidator : AbstractValidator<UpdateProductComm
             .MaximumLength(2000);
 
         RuleFor(x => x.Price)
-            .GreaterThanOrEqualTo(0).WithMessage("El precio no puede ser negativo.");
+            .GreaterThan(0).WithMessage("El precio debe ser mayor a cero.");
 
         RuleFor(x => x.Stock)
             .GreaterThanOrEqualTo(0).WithMessage("El stock no puede ser negativo.");

@@ -8,7 +8,6 @@ namespace PaymentService.Api.Controllers;
 
 [ApiController]
 [Route("api/payments")]
-[Produces("application/json")]
 public class PaymentsController : ControllerBase
 {
     private readonly IMediator _mediator;

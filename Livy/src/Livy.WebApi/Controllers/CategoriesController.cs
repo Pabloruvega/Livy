@@ -12,7 +12,6 @@ namespace Livy.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Produces("application/json")]
 public class CategoriesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -26,7 +25,7 @@ public class CategoriesController : ControllerBase
         => Ok(await _mediator.Send(new GetAllCategoriesQuery(), ct));
 
     /// <summary>Obtiene una categoría por Id.</summary>
-    // Si no existe, el handler lanza CategoryNotFoundException → 404 vía ErrorHandlingMiddleware.
+    // Si no existe, el handler lanza CategoryNotFoundException → 404 vía GlobalExceptionHandler.
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(CategoryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
