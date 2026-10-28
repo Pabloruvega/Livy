@@ -4,4 +4,5 @@ using MediatR;
 
 namespace Livy.Application.Features.Products.Queries.GetProductById;
 
-public record GetProductByIdQuery(Guid ProductId) : IRequest<ProductDto>;
+// IsAdmin: el Admin ve también los productos inactivos; para el resto, un inactivo no existe (404).
+public record GetProductByIdQuery(Guid ProductId, bool IsAdmin) : IRequest<ProductDto>;

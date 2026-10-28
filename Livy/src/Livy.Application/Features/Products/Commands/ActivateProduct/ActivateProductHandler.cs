@@ -38,16 +38,6 @@ public class ActivateProductHandler : IRequestHandler<ActivateProductCommand, Pr
 
         _logger.LogInformation("Producto {Id} activado.", request.ProductId);
 
-        return new ProductDto
-        {
-            Id          = product.Id,
-            Name        = product.Name,
-            Description = product.Description,
-            Price       = product.Price,
-            Stock       = product.Stock,
-            CategoryId  = product.CategoryId,
-            CreatedAt   = product.CreatedAt,
-            IsActive    = product.IsActive
-        };
+        return product.ToDto();
     }
 }

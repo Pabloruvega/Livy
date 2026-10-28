@@ -28,24 +28,25 @@ public class ProductsController : ControllerBase
 
     public ProductsController(IMediator mediator) => _mediator = mediator;
 
-    /// Obtiene todos los productos
+    /// Obtiene los productos activos (un Admin ve también los inactivos)
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
-        => Ok(await _mediator.Send(new GetAllProductsQuery(), ct));
+        => Ok(await _mediator.Send(new GetAllProductsQuery(User.IsInRole("Admin")), ct));
 
-    /// Busca productos cuyo nombre contenga el término dado
+    /// Busca productos cuyo nombre contenga el término dado, sin distinguir mayúsculas
+    /// (solo activos; un Admin ve también los inactivos)
     [HttpGet("search")]
     [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Search([FromQuery] string? term, CancellationToken ct)
-        => Ok(await _mediator.Send(new SearchProductsQuery(term ?? string.Empty), ct));
+        => Ok(await _mediator.Send(new SearchProductsQuery(term ?? string.Empty, User.IsInRole("Admin")), ct));
 
-    /// Obtiene un producto por Id
+    /// Obtiene un producto por Id (si está inactivo, solo un Admin lo ve; el resto recibe 404)
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
-        => Ok(await _mediator.Send(new GetProductByIdQuery(id), ct));
+        => Ok(await _mediator.Send(new GetProductByIdQuery(id, User.IsInRole("Admin")), ct));
 
     /// Crea un nuevo producto
     [Authorize(Roles = "Admin")]

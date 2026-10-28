@@ -22,18 +22,10 @@ public class GetAllProductsHandler
         GetAllProductsQuery request, CancellationToken ct)
     {
         _logger.LogInformation("Ejecutando GetAllProductsQuery.");
-        var products = await _repo.GetAllAsync(ct);
+        var products = request.IsAdmin
+            ? await _repo.GetAllAsync(ct)
+            : await _repo.GetActiveProductsAsync(ct);
 
-        return products.Select(p => new ProductDto
-        {
-            Id          = p.Id,
-            Name        = p.Name,
-            Description = p.Description,
-            Price       = p.Price,
-            Stock       = p.Stock,
-            CategoryId  = p.CategoryId,
-            CreatedAt   = p.CreatedAt,
-            IsActive    = p.IsActive
-        });
+        return products.Select(p => p.ToDto());
     }
 }

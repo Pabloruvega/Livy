@@ -21,9 +21,10 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return await _dbSet.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    // Solo lectura → AsNoTracking. GetByIdAsync sí trackea: los handlers lo usan para modificar y guardar.
     public async Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.ToListAsync(cancellationToken);
+        return await _dbSet.AsNoTracking().ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)

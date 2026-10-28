@@ -5,4 +5,5 @@ using MediatR;
 namespace Livy.Application.Features.Products.Queries.GetAllProducts;
 
 
-public record GetAllProductsQuery() : IRequest<IEnumerable<ProductDto>>;
+// IsAdmin: el Admin ve también los productos inactivos; el resto, solo el catálogo activo.
+public record GetAllProductsQuery(bool IsAdmin) : IRequest<IEnumerable<ProductDto>>;

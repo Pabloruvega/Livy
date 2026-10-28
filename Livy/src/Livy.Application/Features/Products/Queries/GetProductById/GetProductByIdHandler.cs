@@ -26,16 +26,10 @@ public class GetProductByIdHandler
         var product = await _repo.GetByIdAsync(request.ProductId, ct)
             ?? throw new ProductNotFoundException(request.ProductId);
 
-        return new ProductDto
-        {
-            Id          = product.Id,
-            Name        = product.Name,
-            Description = product.Description,
-            Price       = product.Price,
-            Stock       = product.Stock,
-            CategoryId  = product.CategoryId,
-            CreatedAt   = product.CreatedAt,
-            IsActive    = product.IsActive
-        };
+        // Mismo criterio que el catálogo: fuera del Admin, un producto inactivo no se expone.
+        if (!product.IsActive && !request.IsAdmin)
+            throw new ProductNotFoundException(request.ProductId);
+
+        return product.ToDto();
     }
 }

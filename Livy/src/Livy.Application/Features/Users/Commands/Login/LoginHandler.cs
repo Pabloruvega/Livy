@@ -12,15 +12,18 @@ public class LoginHandler : IRequestHandler<LoginCommand, AuthResponseDto?>
 {
     private readonly IUserRepository  _repo;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IPasswordHasher  _passwordHasher;
     private readonly ILogger<LoginHandler> _logger;
 
     public LoginHandler(
         IUserRepository repo,
         IJwtTokenService jwtTokenService,
+        IPasswordHasher passwordHasher,
         ILogger<LoginHandler> logger)
     {
         _repo            = repo;
         _jwtTokenService = jwtTokenService;
+        _passwordHasher  = passwordHasher;
         _logger          = logger;
     }
 
@@ -37,7 +40,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, AuthResponseDto?>
             return null;
         }
 
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Login fallido: contraseña incorrecta para {Email}.", request.Email);
             return null;

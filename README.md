@@ -141,6 +141,9 @@ dotnet ef database update \
 ```
 
 Esto crea `PaymentService/src/PaymentService.Api/paymentservice.db` y `Livy/src/Livy.WebApi/ecommerce.db`.
+
+> Correr las migraciones con los servicios **apagados**: `dotnet ef` compila el proyecto y, si el servicio está
+> corriendo, la compilación falla porque las DLL de `bin/` están en uso.
 La migración de Livy ya carga tres categorías: **Electrónica** (`a1b2c3d4-0000-0000-0000-000000000001`),
 **Ropa** (`…0002`) y **Hogar** (`…0003`).
 
@@ -265,8 +268,9 @@ Con los dos servicios levantados, en http://localhost:5204/swagger:
 6. **Orden ≥ 100000 → `PaymentRejected`** — mismo body con `"quantity": 2` (total 100000) → 201,
    `"status": "PaymentRejected"`, `"paymentMessage": "El pago fue rechazado por el servicio de pagos."`.
    `GET /api/products/{id}` muestra `stock: 9`: las 2 unidades se devolvieron.
-7. **Apagar PaymentService** (Ctrl+C en su terminal) y crear otra orden con `"quantity": 1` → tarda unos segundos
-   (reintentos) y responde 201 con `"status": "Pending"` y el mensaje de reintento. Guardar el `id` de la orden.
+7. **Apagar PaymentService** (Ctrl+C en su terminal) y crear otra orden con `"quantity": 1` → puede tardar hasta
+   ~19 s (4 intentos de 3 s más las esperas de 1, 2 y 4 s; en Windows cada intento llega al timeout) y responde 201
+   con `"status": "Pending"` y el mensaje de reintento. Guardar el `id` de la orden.
 8. **Encender PaymentService** (`dotnet run --project PaymentService/src/PaymentService.Api`) y llamar
    `POST /api/orders/{id}/pay` → 200, `"status": "Paid"`.
 9. **Usuario común → endpoint Admin (403)** — `POST /api/users/register`
@@ -305,8 +309,8 @@ como ProblemDetails gracias a `app.UseStatusCodePages()`.
 | JSON mal formado / tipos inválidos (`[ApiController]`) | **400** | `One or more validation errors occurred.` | body inválido |
 | Sin token / token inválido, credenciales inválidas, falta `X-Api-Key` | **401** | `Unauthorized` | login fallido, PaymentService sin ApiKey |
 | `ForbiddenAccessException` / rol insuficiente | **403** | `Forbidden` | ver la orden de otro usuario, usuario común en endpoint Admin |
-| `NotFoundException` (`ProductNotFound`, `CategoryNotFound`, `OrderNotFound`, `UserNotFound`, `PaymentTransactionNotFound`) | **404** | `Resource not found` | Id inexistente |
-| `DomainException` (incluye `InsufficientStockException`, `InvalidPaymentAmountException`) | **422** | `Business rule violated` | stock insuficiente, email o categoría duplicados, producto inactivo, pagar una orden que no está `Pending` |
+| `NotFoundException` (`ProductNotFound`, `CategoryNotFound`, `OrderNotFound`, `UserNotFound`, `PaymentTransactionNotFound`) | **404** | `Resource not found` | Id inexistente; producto inactivo pedido por un usuario que no es Admin |
+| `DomainException` (incluye `InsufficientStockException`, `InvalidPaymentAmountException`) | **422** | `Business rule violated` | stock insuficiente, email o categoría duplicados, pedir un producto inactivo, eliminar un producto con órdenes, pagar una orden que no está `Pending` |
 | Cualquier otra | **500** | `An unexpected error occurred` (sin `detail` ni stacktrace) | — |
 
 Los 4xx se loguean con `LogWarning` (`MÉTODO ruta → status: detalle`); los 500, con `LogError` y la excepción completa.
@@ -328,9 +332,9 @@ Los 4xx se loguean con `LogWarning` (`MÉTODO ruta → status: detalle`); los 50
 | GET | `/api/categories/{id}` | Público |
 | POST | `/api/categories` | Admin |
 | DELETE | `/api/categories/{id}` | Admin |
-| GET | `/api/products` | Autenticado |
-| GET | `/api/products/search?term=...` | Autenticado |
-| GET | `/api/products/{id}` | Autenticado |
+| GET | `/api/products` | Autenticado (solo productos activos; Admin ve también los inactivos) |
+| GET | `/api/products/search?term=...` | Autenticado (busca por nombre sin distinguir mayúsculas; solo activos, salvo Admin) |
+| GET | `/api/products/{id}` | Autenticado (un producto inactivo da 404, salvo para Admin) |
 | POST | `/api/products` | Admin |
 | PUT | `/api/products/{id}` | Admin |
 | DELETE | `/api/products/{id}` | Admin |

@@ -33,4 +33,8 @@ public class OrderRepository : Repository<Order>, IOrderRepository
 
     public async Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
         => await _ctx.Orders.AnyAsync(o => o.Id == id, ct);
+
+    // OrderItem.ProductId no tiene FK: esta consulta es la que evita dejar ítems huérfanos.
+    public async Task<bool> HasOrdersForProductAsync(Guid productId, CancellationToken ct = default)
+        => await _ctx.OrderItems.AnyAsync(i => i.ProductId == productId, ct);
 }

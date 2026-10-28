@@ -38,16 +38,6 @@ public class DeactivateProductHandler : IRequestHandler<DeactivateProductCommand
 
         _logger.LogInformation("Producto {Id} desactivado.", request.ProductId);
 
-        return new ProductDto
-        {
-            Id          = product.Id,
-            Name        = product.Name,
-            Description = product.Description,
-            Price       = product.Price,
-            Stock       = product.Stock,
-            CategoryId  = product.CategoryId,
-            CreatedAt   = product.CreatedAt,
-            IsActive    = product.IsActive
-        };
+        return product.ToDto();
     }
 }

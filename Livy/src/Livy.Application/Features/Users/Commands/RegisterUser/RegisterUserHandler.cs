@@ -1,4 +1,5 @@
 // Application/Features/Users/Commands/RegisterUser/RegisterUserHandler.cs
+using Livy.Application.Contracts.External;
 using Livy.Application.Contracts.Persistence;
 using Livy.Application.DTOs.User;
 using Livy.Domain.Entities;
@@ -14,16 +15,19 @@ public class RegisterUserHandler : IRequestHandler<RegisterUserCommand, UserDto>
 {
     private readonly IUserRepository _repo;
     private readonly IUnitOfWork     _unitOfWork;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<RegisterUserHandler> _logger;
 
     public RegisterUserHandler(
         IUserRepository repo,
         IUnitOfWork unitOfWork,
+        IPasswordHasher passwordHasher,
         ILogger<RegisterUserHandler> logger)
     {
-        _repo       = repo;
-        _unitOfWork = unitOfWork;
-        _logger     = logger;
+        _repo           = repo;
+        _unitOfWork     = unitOfWork;
+        _passwordHasher = passwordHasher;
+        _logger         = logger;
     }
 
     public async Task<UserDto> Handle(RegisterUserCommand request, CancellationToken ct)
@@ -36,7 +40,7 @@ public class RegisterUserHandler : IRequestHandler<RegisterUserCommand, UserDto>
         if (!isUnique)
             throw new DomainException($"El email '{email.Value}' ya está registrado.");
 
-        var hash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        var hash = _passwordHasher.Hash(request.Password);
         var user = new User(email, request.Name, hash);
 
         await _repo.AddAsync(user, ct);

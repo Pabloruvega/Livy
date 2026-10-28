@@ -39,6 +39,9 @@ public static class InfrastructureServiceExtensions
         // JWT Token Service
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+        // Hash de contraseñas (BCrypt)
+        services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+
         // Resiliencia hacia PaymentService (valores en Services:Payment, con defaults si faltan).
         var timeoutPerAttempt = TimeSpan.FromSeconds(
             GetPositiveInt(configuration, "Services:Payment:TimeoutPerAttemptSeconds", 3));
