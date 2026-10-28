@@ -12,6 +12,20 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ─── Secretos obligatorios (fail fast) ────────────────────────────────────────
+// En Development vienen de appsettings.Development.json; en otros entornos, de variables
+// de entorno (Jwt__Key, Services__Payment__ApiKey) o user-secrets. appsettings.json los deja vacíos.
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32) // HS256 necesita al menos 256 bits
+    throw new InvalidOperationException(
+        $"'Jwt:Key' no está configurada o tiene menos de 32 caracteres (entorno: {builder.Environment.EnvironmentName}). " +
+        "En desarrollo se toma de appsettings.Development.json (ASPNETCORE_ENVIRONMENT=Development).");
+
+if (string.IsNullOrWhiteSpace(builder.Configuration["Services:Payment:ApiKey"]))
+    throw new InvalidOperationException(
+        $"'Services:Payment:ApiKey' no está configurada (entorno: {builder.Environment.EnvironmentName}). " +
+        "Tiene que coincidir con 'Security:ApiKey' del PaymentService.");
+
 // ─── Servicios ────────────────────────────────────────────────────────────────
 
 builder.Services.AddControllers();
@@ -59,8 +73,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplicationServices();
 
 // ─── Autenticación JWT ────────────────────────────────────────────────────────
-var jwtKey = builder.Configuration["Jwt:Key"]!;
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

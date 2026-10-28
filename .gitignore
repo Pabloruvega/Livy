@@ -10,7 +10,9 @@ obj/
 *.db-wal
 
 # Configuración local con secrets (connection strings reales, API keys)
-appsettings.Development.json
+# appsettings.Development.json SÍ se versiona: tiene solo claves de desarrollo
+# (JWT, ApiKey entre servicios, Admin de prueba) para que el proyecto levante al
+# clonarlo. Los valores reales de otros entornos van en variables de entorno o user-secrets.
 appsettings.Local.json
 secrets.json
 
@@ -18,6 +20,9 @@ secrets.json
 .vs/
 *.user
 *.suo
+
+# VS Code C# Dev Kit — caché del language service, se regenera sola
+*.lscache
 
 # Rider
 .idea/

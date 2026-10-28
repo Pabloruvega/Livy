@@ -6,6 +6,14 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ─── Secretos obligatorios (fail fast) ────────────────────────────────────────
+// En Development viene de appsettings.Development.json; en otros entornos, de la variable
+// de entorno Security__ApiKey o user-secrets. appsettings.json la deja vacía.
+if (string.IsNullOrWhiteSpace(builder.Configuration["Security:ApiKey"]))
+    throw new InvalidOperationException(
+        $"'Security:ApiKey' no está configurada (entorno: {builder.Environment.EnvironmentName}). " +
+        "En desarrollo se toma de appsettings.Development.json (ASPNETCORE_ENVIRONMENT=Development).");
+
 // ─── Servicios ────────────────────────────────────────────────────────────────
 
 builder.Services.AddControllers();

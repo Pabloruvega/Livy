@@ -1,235 +1,151 @@
 # 🛒 Livy — E-Commerce API
 
-API REST desarrollada con **ASP.NET Core 8** aplicando **Clean Architecture**, **CQRS con MediatR** y **autenticación JWT**.
+API REST con **ASP.NET Core 8**, **Clean Architecture**, **CQRS con MediatR** y **autenticación JWT**.
+Consume el microservicio [PaymentService](../PaymentService/README.md) para cobrar las órdenes.
 
-Proyecto integrador de la materia **Backend (Optativa II)** — Tecnicatura Universitaria en Desarrollo de Software · UCCuyo · 2026.  
+Proyecto integrador de la materia **Backend (Optativa II)** — Tecnicatura Universitaria en Desarrollo de Software · UCCuyo · 2026.
 **Profesor:** Tec. Nicolás Ortiz
+
+> Este archivo es el detalle del e-commerce. Cómo levantar los dos servicios, el flujo completo en Swagger,
+> la tabla de endpoints y la de errores están en el [README principal](../README.md).
 
 ---
 
 ## 🏗️ Arquitectura
 
 ```
-Livy/
-├── Livy.Domain/          # Entidades, Value Objects, Excepciones, Interfaces (núcleo)
-├── Livy.Application/     # Casos de uso (Features), DTOs, Contratos, Services
-├── Livy.Infrastructure/  # EF Core, Repositorios, Migraciones, JWT
-└── Livy.WebApi/          # Controllers, Middleware, Program.cs
+Livy/src/
+├── Livy.Domain/          # Entidades, Value Objects (Email), enums, excepciones de dominio, IRepository/IUnitOfWork
+├── Livy.Application/     # Commands/Queries + Handlers (MediatR), validadores, DTOs, contratos
+├── Livy.Infrastructure/  # EF Core + SQLite, repositorios, migraciones, JWT, cliente HTTP de PaymentService
+└── Livy.WebApi/          # Controllers, middlewares, GlobalExceptionHandler, DbSeeder, Program.cs
 ```
+
+Regla de dependencia: `WebApi → Infrastructure → Application → Domain` (WebApi también referencia a Application).
 
 ### Flujo de una request HTTP
 
 ```
 HTTP Request
-    ↓
+    ↓  (UseExceptionHandler → UseStatusCodePages → RequestLoggingMiddleware → Authentication → Authorization)
 Controller
     ↓  _mediator.Send(command/query)
-MediatR
-    ↓  enruta automáticamente
-Handler (UseCase)
-    ↓  IRepository + IUnitOfWork
-Base de Datos (SQLite)
+MediatR → ValidationBehavior (FluentValidation; si falla → 400)
     ↓
-Response DTO → Controller → HTTP Response
+Handler (caso de uso)
+    ↓  repositorios + IUnitOfWork   /   IPaymentClient → PaymentService
+Base de datos (SQLite)
+    ↓
+DTO → Controller → HTTP Response
 ```
 
-### Estructura de la capa Application (CQRS)
+### Capa Application (CQRS)
 
 ```
 Livy.Application/
+├── Common/
+│   ├── Behaviors/        # ValidationBehavior (pipeline de MediatR)
+│   └── Exceptions/       # ForbiddenAccessException (→ 403)
 ├── Contracts/
-│   └── Persistence/          # Interfaces de repositorios (contratos)
-├── Features/
-│   ├── Products/
-│   │   ├── Commands/          # CreateProduct, UpdateProduct, DeleteProduct
-│   │   └── Queries/           # GetAllProducts, GetProductById
-│   └── Orders/
-│       ├── Commands/          # CreateOrder
-│       └── Queries/           # GetOrderById
-├── Services/                  # UserService (login/register), CategoryService
-└── DTOs/                      # Objetos de transferencia de datos
+│   ├── External/         # IPaymentClient, IJwtTokenService
+│   └── Persistence/      # IProductRepository, IOrderRepository, ICategoryRepository, IUserRepository
+├── DTOs/                 # Category, Order, Product, User
+└── Features/
+    ├── Categories/  Commands: CreateCategory, DeleteCategory · Queries: GetAllCategories, GetCategoryById
+    ├── Orders/      Commands: CreateOrder, PayOrder · Queries: GetOrderById · Common: OrderPaymentProcessor
+    ├── Products/    Commands: Create, Update, Delete, Activate, Deactivate · Queries: GetAll, GetById, Search
+    └── Users/       Commands: RegisterUser, Login, PromoteToAdmin · Queries: GetAllUsers, GetUserById
 ```
 
 ---
 
-## ✅ Requisitos previos
+## ⚙️ Configuración
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Git](https://git-scm.com/)
-- [DB Browser for SQLite](https://sqlitebrowser.org/) *(opcional, para inspeccionar la BD)*
+| Archivo | Qué tiene |
+|---|---|
+| `src/Livy.WebApi/appsettings.json` | Connection string, `Services:Payment` (URL, timeouts, reintentos), `Jwt` (Issuer, Audience, `ExpirationHours: 1`), logging. Las claves sensibles quedan en `""`. |
+| `src/Livy.WebApi/appsettings.Development.json` | Valores de desarrollo: `Jwt:Key`, `Services:Payment:ApiKey`, `Admin:Email`, `Admin:Password`. |
 
----
-
-## 🚀 Cómo levantar el proyecto
-
-### 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/Pabloruvega/Livy.git
-cd Livy
-```
-
-### 2. Restaurar paquetes NuGet
-
-```bash
-dotnet restore Livy/Livy.sln
-```
-
-### 3. Instalar la herramienta de migraciones *(solo la primera vez)*
-
-```bash
-dotnet tool install --global dotnet-ef
-```
-
-### 4. Aplicar las migraciones y crear la base de datos
-
-```bash
-dotnet ef database update \
-  --project Livy/src/Livy.Infrastructure \
-  --startup-project Livy/src/Livy.WebApi
-```
-
-> Esto crea automáticamente el archivo `ecommerce.db` en la carpeta `src/Livy.WebApi/`.
-
-### 5. Ejecutar el proyecto
-
-```bash
-dotnet run --project Livy/src/Livy.WebApi
-```
-
-### 6. Abrir Swagger
-
-```
-http://localhost:5204/swagger
-```
+Si `Jwt:Key` falta o tiene menos de 32 caracteres, o falta `Services:Payment:ApiKey`, la app no arranca.
+`Services:Payment:ApiKey` tiene que coincidir con `Security:ApiKey` del PaymentService.
 
 ---
 
 ## 🔐 Autenticación JWT
 
-Todos los endpoints (excepto `/register` y `/login`) requieren un token JWT.
+- `POST /api/users/register` y `POST /api/users/login` son públicos, igual que `GET /api/categories` y `GET /api/categories/{id}`.
+  El resto requiere token.
+- El registro siempre crea usuarios con rol `User`. El primer Admin lo crea `DbSeeder` al iniciar
+  (`admin@livy.com` / `Admin123!`); después, un Admin promueve a otros con `PATCH /api/users/{id}/promote`.
+- El token dura `Jwt:ExpirationHours` (1 hora).
 
-### Paso 1 — Registrar un usuario
-
-**`POST /api/users/register`**
-
-```json
-{
-  "email": "pablo@gmail.com",
-  "name": "Pablo",
-  "password": "123456"
-}
-```
-
-Respuesta `201 Created`:
-```json
-{
-  "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "email": "pablo@gmail.com",
-  "name": "Pablo",
-  "role": "User",
-  "createdAt": "2026-05-22T..."
-}
-```
-
-### Paso 2 — Hacer login y obtener el token
-
-**`POST /api/users/login`**
+**Registro** — `POST /api/users/register` → `201 Created`
 
 ```json
-{
-  "email": "pablo@gmail.com",
-  "password": "123456"
-}
+{ "email": "pablo@gmail.com", "name": "Pablo", "password": "123456" }
 ```
 
-Respuesta `200 OK`:
 ```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "email": "pablo@gmail.com",
-  "name": "Pablo",
-  "role": "User",
-  "expires": "2026-05-22T..."
-}
+{ "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "email": "pablo@gmail.com", "name": "Pablo", "role": "User", "createdAt": "2026-..." }
 ```
 
-### Paso 3 — Usar el token en Swagger
+**Login** — `POST /api/users/login` → `200 OK`
 
-1. Copiá el valor del campo `token`
-2. Hacé clic en el botón **Authorize 🔒** (arriba a la derecha en Swagger)
-3. Pegá el token y hacé clic en **Authorize**
-4. Todos los endpoints quedan habilitados
+```json
+{ "email": "pablo@gmail.com", "password": "123456" }
+```
 
-### Casos de error
+```json
+{ "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "email": "pablo@gmail.com", "name": "Pablo", "role": "User", "expires": "2026-..." }
+```
 
-| Escenario | Status | Mensaje |
+En Swagger: botón **Authorize 🔒**, pegar el valor de `token` (sin `Bearer`) y **Authorize**.
+
+### Casos de error (ProblemDetails)
+
+| Escenario | Status | `title` / `detail` |
 |---|---|---|
-| Contraseña incorrecta | `401 Unauthorized` | `"Credenciales inválidas."` |
-| Email ya registrado | `400 Bad Request` | `"El email '...' ya está registrado."` |
-| Sin token en el header | `401 Unauthorized` | — |
+| Datos inválidos (email sin formato, contraseña de menos de 6 caracteres) | `400` | `Validation failed`, con `errors` por campo |
+| Contraseña incorrecta o email inexistente | `401` | `Unauthorized` / `Credenciales inválidas.` |
+| Sin token en el header | `401` | `Unauthorized` |
+| Email ya registrado | `422` | `Business rule violated` / `El email '...' ya está registrado.` |
 
 ---
 
-## 📦 Endpoints disponibles
+## 💳 Integración con PaymentService
 
-### Usuarios
-| Método | Ruta | Auth | Descripción |
-|---|---|---|---|
-| `POST` | `/api/users/register` | ❌ | Registrar nuevo usuario |
-| `POST` | `/api/users/login` | ❌ | Login — devuelve token JWT |
-| `GET` | `/api/users` | ✅ | Listar todos los usuarios |
-| `GET` | `/api/users/{id}` | ✅ | Obtener usuario por Id |
+- `IPaymentClient` (Application) → `PaymentClient` (Infrastructure), registrado con `AddHttpClient<IPaymentClient, PaymentClient>`.
+- Header `X-Api-Key` con `Services:Payment:ApiKey`; URL base `Services:Payment:BaseUrl` (`http://localhost:5090`).
+- Polly: timeout de `TimeoutPerAttemptSeconds` (3 s) por intento, `RetryCount` (3) reintentos con esperas de 1, 2 y 4 s,
+  y `HttpClient.Timeout` = `TotalTimeoutSeconds` (25 s).
+- `OrderPaymentProcessor` aplica el resultado: `Approved` → `Paid`; `Rejected` → `PaymentRejected` + devolución de stock;
+  sin respuesta → `Pending` (reintentable con `POST /api/orders/{id}/pay`).
 
-### Productos
-| Método | Ruta | Auth | Descripción |
-|---|---|---|---|
-| `GET` | `/api/products` | ✅ | Listar todos los productos |
-| `GET` | `/api/products/{id}` | ✅ | Obtener producto por Id |
-| `GET` | `/api/products/search?term=...` | ✅ | Buscar por nombre |
-| `POST` | `/api/products` | ✅ | Crear producto |
-| `PUT` | `/api/products/{id}` | ✅ | Actualizar producto |
-| `DELETE` | `/api/products/{id}` | ✅ | Eliminar producto |
-
-### Categorías
-| Método | Ruta | Auth | Descripción |
-|---|---|---|---|
-| `GET` | `/api/categories` | ✅ | Listar categorías |
-| `GET` | `/api/categories/{id}` | ✅ | Obtener categoría por Id |
-| `POST` | `/api/categories` | ✅ | Crear categoría |
-| `DELETE` | `/api/categories/{id}` | ✅ | Eliminar categoría |
-
-### Órdenes
-| Método | Ruta | Auth | Descripción |
-|---|---|---|---|
-| `GET` | `/api/orders/{id}` | ✅ | Obtener orden por Id (con ítems) |
-| `POST` | `/api/orders` | ✅ | Crear orden (descuenta stock automáticamente) |
+El detalle de estados y del comportamiento ante caídas está en el [README principal](../README.md#estados-de-la-orden-livy).
 
 ---
 
 ## 🗄️ Base de datos
 
-El proyecto usa **SQLite** — no requiere instalar nada adicional.
+SQLite, sin instalar nada. Connection string en `src/Livy.WebApi/appsettings.json`:
 
-**Connection string** en `src/Livy.WebApi/appsettings.json`:
 ```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=ecommerce.db"
-  }
-}
+{ "ConnectionStrings": { "DefaultConnection": "Data Source=ecommerce.db" } }
 ```
 
-### Comandos útiles de migraciones
+El archivo `ecommerce.db` se crea en `src/Livy.WebApi/` y no se versiona. La migración `AddCategoriesTable` siembra
+las categorías Electrónica, Ropa y Hogar con GUIDs fijos (`a1b2c3d4-0000-0000-0000-00000000000{1,2,3}`).
+
+### Migraciones (desde la raíz del repo)
 
 ```bash
-# Crear una nueva migración
-dotnet ef migrations add NombreMigracion \
+# Aplicar migraciones pendientes (crea la base si no existe)
+dotnet ef database update \
   --project Livy/src/Livy.Infrastructure \
   --startup-project Livy/src/Livy.WebApi
 
-# Aplicar migraciones pendientes
-dotnet ef database update \
+# Crear una nueva migración
+dotnet ef migrations add NombreMigracion \
   --project Livy/src/Livy.Infrastructure \
   --startup-project Livy/src/Livy.WebApi
 
@@ -241,15 +157,18 @@ dotnet ef database update 0 \
 
 ---
 
-## 🛠️ Tecnologías utilizadas
+## 🛠️ Tecnologías
 
-| Tecnología | Versión | Uso |
+| Paquete | Versión | Proyecto |
 |---|---|---|
-| ASP.NET Core | 8.0 | Framework web |
-| Entity Framework Core | 8.0 | ORM |
-| SQLite | — | Base de datos de desarrollo |
-| MediatR | 12.x | Patrón CQRS / Mediator |
-| JWT Bearer | 8.0 | Autenticación |
-| Swashbuckle (Swagger) | 6.6 | Documentación de la API |
-
----
+| ASP.NET Core | `net8.0` | todos |
+| Microsoft.EntityFrameworkCore (+ `.Sqlite`, `.Design`, `.Tools`) | 8.0.11 | Livy.Infrastructure |
+| MediatR | 14.1.0 | Livy.Application |
+| FluentValidation (+ `.DependencyInjectionExtensions`) | 12.1.1 | Livy.Application |
+| BCrypt.Net-Next | 4.2.0 | Livy.Application |
+| Microsoft.AspNetCore.Authentication.JwtBearer | 8.0.0 | Livy.Infrastructure |
+| System.IdentityModel.Tokens.Jwt | 7.5.0 | Livy.Infrastructure |
+| Microsoft.Extensions.Http.Polly | 10.0.11 | Livy.Infrastructure |
+| System.Net.Http.Json | 10.0.11 | Livy.Infrastructure |
+| Swashbuckle.AspNetCore | 6.6.2 | Livy.WebApi |
+| Microsoft.AspNetCore.OpenApi | 8.0.26 | Livy.WebApi |

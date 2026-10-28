@@ -14,8 +14,11 @@ public class ApiKeyMiddleware
     public ApiKeyMiddleware(RequestDelegate next, IConfiguration configuration)
     {
         _next = next;
-        _apiKey = configuration["Security:ApiKey"]
-            ?? throw new InvalidOperationException("Falta configurar 'Security:ApiKey' en appsettings.json.");
+        // IsNullOrWhiteSpace y no solo null: con "" un header X-Api-Key vacío pasaría la comparación.
+        var apiKey = configuration["Security:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException("Falta configurar 'Security:ApiKey'.");
+        _apiKey = apiKey;
     }
 
     public async Task InvokeAsync(HttpContext context)

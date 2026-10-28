@@ -18,10 +18,12 @@ public static class DbSeeder
         if (users.Any(u => u.Role == "Admin"))
             return;
 
-        var email = configuration["Admin:Email"]
-            ?? throw new InvalidOperationException("Falta configurar 'Admin:Email' en appsettings.json.");
-        var password = configuration["Admin:Password"]
-            ?? throw new InvalidOperationException("Falta configurar 'Admin:Password' en appsettings.json.");
+        // appsettings.json los deja vacíos: en desarrollo vienen de appsettings.Development.json.
+        var email    = configuration["Admin:Email"];
+        var password = configuration["Admin:Password"];
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            throw new InvalidOperationException(
+                "Falta configurar 'Admin:Email' / 'Admin:Password' (en desarrollo, appsettings.Development.json).");
 
         var admin = await mediator.Send(new RegisterUserCommand(email, "Admin", password));
         await mediator.Send(new PromoteToAdminCommand(admin.Id));
